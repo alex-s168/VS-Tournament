@@ -57,7 +57,7 @@ class ConnectorBlock: BaseEntityBlock(
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity =
         ConnectorBlockEntity(pos, state)
 
-    @Suppress("UNCHECKED_CAST")
+    /*@Suppress("UNCHECKED_CAST")
     override fun <T: BlockEntity> getTicker(
         level: Level,
         state: BlockState,
@@ -75,5 +75,5 @@ class ConnectorBlock: BaseEntityBlock(
         }
 
         super.onRemove(state, level, pos, newState, isMoving)
-    }
+    }*/
 }

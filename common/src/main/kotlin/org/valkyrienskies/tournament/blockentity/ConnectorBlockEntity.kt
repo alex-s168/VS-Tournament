@@ -13,11 +13,11 @@ import org.joml.Vector3d
 import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.apigame.constraints.VSAttachmentConstraint
+import org.valkyrienskies.core.internal.joints.VSFixedJoint
+import org.valkyrienskies.core.internal.joints.VSJointId
 import org.valkyrienskies.mod.common.*
 import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toMinecraft
-import org.valkyrienskies.physics_api.ConstraintId
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentBlocks
 import org.valkyrienskies.tournament.util.extension.toBlock
@@ -28,13 +28,13 @@ import kotlin.streams.asSequence
 class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
     BlockEntity(TournamentBlockEntities.CONNECTOR.get(), pos, state)
 {
-    var constraint: ConstraintId? = null
-    var constraintData: VSAttachmentConstraint? = null
+    var constraint: VSJointId? = null
+    var constraintData: VSFixedJoint? = null
     var otherbesec: BlockPos? = null
     var redstoneLevel = 0
     var recreate = false
 
-    fun tick() {
+    /*fun tick() {
         val level = level as? ServerLevel ?: return
 
         if (recreate) {
@@ -84,7 +84,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
                 connect(pos, be)
             }
         }
-    }
+    }*/
 
     private fun transform(pos: Vector3dc): Pair<ShipId, Vector3dc> {
         val level = level as ServerLevel
@@ -98,7 +98,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
             ?: (level.shipObjectWorld.dimensionToGroundBodyIdImmutable[level.dimensionId]!! to pos)
     }
 
-    private fun connect(other: BlockPos, otherBe: ConnectorBlockEntity): Boolean {
+    /*private fun connect(other: BlockPos, otherBe: ConnectorBlockEntity): Boolean {
         val level = level as ServerLevel
 
         val centerA = Vec3.atCenterOf(blockPos).toJOML()
@@ -154,7 +154,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
                     otherBe?.disconnect(true)
             }
         }
-    }
+    }*/
 
     override fun getUpdateTag(): CompoundTag {
         val tag = CompoundTag()
@@ -166,7 +166,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         return ClientboundBlockEntityDataPacket.create(this)
     }
 
-    override fun saveAdditional(tag: CompoundTag) {
+    /*override fun saveAdditional(tag: CompoundTag) {
         constraint?.let {
             tag.putInt("constraint", it)
             constraintData?.let {
@@ -225,9 +225,9 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
                 )
             }
         }
-    }
+    }*/
 
-    companion object {
+    /*companion object {
         private const val compliance = 1e-20
         private const val maxForce = 1e10
 
@@ -238,5 +238,5 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
             assert(level == be.level)
             be.tick()
         }
-    }
+    }*/
 }
