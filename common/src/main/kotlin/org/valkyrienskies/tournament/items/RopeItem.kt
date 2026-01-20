@@ -6,13 +6,18 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.context.UseOnContext
+import org.joml.Quaterniond
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.apigame.constraints.*
+import org.valkyrienskies.core.internal.joints.VSDistanceJoint
+import org.valkyrienskies.core.internal.joints.VSJointId
+import org.valkyrienskies.core.internal.joints.VSJointMaxForceTorque
+import org.valkyrienskies.core.internal.joints.VSJointPose
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod
 import org.valkyrienskies.mod.common.dimensionId
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.shipObjectWorld
 import org.valkyrienskies.mod.common.util.toJOMLD
-import org.valkyrienskies.physics_api.ConstraintId
 import org.valkyrienskies.tournament.blocks.RopeHookBlock
 import org.valkyrienskies.tournament.TournamentBlocks
 import org.valkyrienskies.tournament.TournamentConfig
@@ -24,7 +29,7 @@ class RopeItem : Item(
 
     private var clickedPosition: BlockPos? = null
     private var clickedShipId: ShipId? = null
-    private var ropeConstraintId: ConstraintId? = null
+    private var ropeVSJointId: VSJointId? = null
 
     override fun useOn(context: UseOnContext): InteractionResult {
 
@@ -96,22 +101,27 @@ class RopeItem : Item(
             println("C1 $posC")
             println("D1 $posD")
 
-            val ropeCompliance = 1e-5 / (level.getShipObjectManagingPos(blockPos)?.inertiaData?.mass ?: 1).toDouble()
+            val ropeCompliance = 1e-5 / (level.getLoadedShipManagingPos(blockPos)?.inertiaData?.mass ?: 1).toDouble()
             val ropeMaxForce = TournamentConfig.SERVER.ropeMaxForce
-            val ropeConstraint = VSRopeConstraint(
-                thisShipId, otherShipId,
+
+            val jointPosA = VSJointPose(posA, Quaterniond())
+            val jointPosB = VSJointPose(posB, Quaterniond())
+
+            val ropeConstraint = VSDistanceJoint(
+                thisShipId, jointPosA,
+                otherShipId, jointPosB,
+                VSJointMaxForceTorque(ropeMaxForce.toFloat(), ropeMaxForce.toFloat()),
                 ropeCompliance,
-                posA, posB,
-                ropeMaxForce,
-                posC.sub(posD).length() + 1.0
+                null,
+                (posC.sub(posD).length() + 1.0).toFloat()
             )
 
             println("Length: "+ posC.sub(posD).length())
             println(ropeConstraint)
 
-            val ropeConstraintId = level.shipObjectWorld.createNewConstraint(ropeConstraint)
-            this.ropeConstraintId = ropeConstraintId
-            ropeConstraintId?.let {
+            val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
+
+            gtpa.addJoint(ropeConstraint) {
                 (level.getBlockEntity(blockPos) as RopeHookBlockEntity)
                     .setRopeID(it, posA, posB, level)
                 (level.getBlockEntity(clickedPosition!!) as RopeHookBlockEntity)
@@ -120,7 +130,7 @@ class RopeItem : Item(
 
             clickedPosition = null
             clickedShipId = null
-            this.ropeConstraintId = null
+            this.ropeVSJointId = null
 
             println("Done\n")
 
@@ -129,7 +139,7 @@ class RopeItem : Item(
             // CONNECT FIRST POINT
             clickedShipId = shipId
             clickedPosition = blockPos
-            ropeConstraintId = null
+            ropeVSJointId = null
 
         }
     }

@@ -16,6 +16,7 @@ import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.level.storage.loot.LootParams
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets
 import net.minecraft.world.phys.BlockHitResult
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.tournament.TournamentConfig
@@ -34,9 +35,9 @@ open class BalloonBlock : Block(
     }
 
     protected fun getShipControl(level: ServerLevel, pos: BlockPos) =
-        (level.getShipObjectManagingPos(pos)
-            ?: level.getShipManagingPos(pos))
+        (level.getLoadedShipManagingPos(pos)
             ?.let { TournamentShips.getOrCreate(it) }
+                )
 
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         if (level.isClientSide) return

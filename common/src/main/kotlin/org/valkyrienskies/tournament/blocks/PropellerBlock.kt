@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.shapes.CollisionContext
 import org.valkyrienskies.core.api.ships.ServerShip
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.util.toJOML
@@ -68,10 +69,9 @@ class PropellerBlock(
                 .add(FACING)
         )
 
-    private fun getShipControl(level: Level, pos: BlockPos)  =
-        ((level.getShipObjectManagingPos(pos)
-            ?: level.getShipManagingPos(pos))
-                as? ServerShip)?.let { TournamentShips.getOrCreate(it) }
+    private fun getShipControl(level: ServerLevel, pos: BlockPos)  =
+        ((level.getLoadedShipManagingPos(pos)
+                )?.let { TournamentShips.getOrCreate(it) })
 
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         super.onPlace(state, level, pos, oldState, isMoving)

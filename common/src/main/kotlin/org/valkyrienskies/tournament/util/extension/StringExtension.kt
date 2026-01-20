@@ -3,7 +3,7 @@ package org.valkyrienskies.tournament.util.extension
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
-import org.valkyrienskies.core.apigame.world.properties.DimensionId
+import org.valkyrienskies.core.api.world.properties.DimensionId
 
 fun DimensionId.toDimensionKey() =
     this.split(":").let {

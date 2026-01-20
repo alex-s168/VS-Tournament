@@ -15,9 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.jetbrains.annotations.NotNull;
-import org.valkyrienskies.core.impl.config.VSConfigClass;
 import org.valkyrienskies.tournament.*;
-import org.valkyrienskies.mod.compat.clothconfig.VSClothConfig;
 import org.valkyrienskies.mod.fabric.common.ValkyrienSkiesModFabric;
 import org.valkyrienskies.tournament.registry.CreativeTabs;
 
@@ -60,7 +58,7 @@ public class TournamentModFabric implements ModInitializer {
         }
     }
 
-    public static class ModMenu implements ModMenuApi {
+    /*public static class ModMenu implements ModMenuApi {
         @Override
         public ConfigScreenFactory<?> getModConfigScreenFactory() {
             return (parent) -> VSClothConfig.createConfigScreenFor(
@@ -68,5 +66,5 @@ public class TournamentModFabric implements ModInitializer {
                     VSConfigClass.Companion.getRegisteredConfig(TournamentConfig.class)
             );
         }
-    }
+    }*/
 }

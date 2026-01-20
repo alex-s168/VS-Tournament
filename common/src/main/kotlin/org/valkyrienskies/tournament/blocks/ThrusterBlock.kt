@@ -26,6 +26,7 @@ import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
 import org.valkyrienskies.core.api.ships.ServerShip
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.util.toJOMLD
@@ -137,10 +138,9 @@ class ThrusterBlock(
         return drops
     }
 
-    private fun getShipControl(level: Level, pos: BlockPos)  =
-        ((level.getShipObjectManagingPos(pos)
-            ?: level.getShipManagingPos(pos))
-            as? ServerShip)?.let { TournamentShips.getOrCreate(it) }
+    private fun getShipControl(level: ServerLevel, pos: BlockPos)  =
+        (level.getLoadedShipManagingPos(pos)
+            ?.let { TournamentShips.getOrCreate(it) })
 
     private fun enableThruster(level: ServerLevel, pos: BlockPos, state: BlockState) {
         getShipControl(level, pos)?.let {

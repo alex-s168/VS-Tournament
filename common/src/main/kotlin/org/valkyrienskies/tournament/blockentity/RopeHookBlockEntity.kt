@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import org.joml.Vector3d
-import org.valkyrienskies.physics_api.ConstraintId
+import org.valkyrienskies.core.internal.joints.VSJointId
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentDebugHelper
@@ -20,7 +20,7 @@ class RopeHookBlockEntity(pos: BlockPos, state: BlockState):
         BlockEntity(TournamentBlockEntities.ROPE_HOOK.get(), pos, state)
 {
 
-    var ropeId: ConstraintId? = null
+    var ropeId: VSJointId? = null
     var mainPos: Vector3d? = null
     var otherPos: Vector3d? = null
 
@@ -31,7 +31,7 @@ class RopeHookBlockEntity(pos: BlockPos, state: BlockState):
     var isSecondary = false
     var conPos: BlockPos? = null
 
-    fun setRopeID(rope: ConstraintId, mainIn: Vector3d?, otherIn: Vector3d?, level: Level) {
+    fun setRopeID(rope: VSJointId, mainIn: Vector3d?, otherIn: Vector3d?, level: Level) {
         println("Block>> $rope")
 
         val main = Helper3d.convertShipToWorldSpace(level, mainIn!!.add(0.5, 0.5, 0.5, Vector3d()))

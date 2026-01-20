@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.util.toJOML
@@ -52,9 +53,8 @@ class SpinnerBlock : DirectionalBlock(
     }
 
     private fun getShipControl(level: ServerLevel, pos: BlockPos) =
-        (level.getShipObjectManagingPos(pos)
-            ?: level.getShipManagingPos(pos))
-            ?.let { TournamentShips.getOrCreate(it) }
+        (level.getLoadedShipManagingPos(pos)
+            ?.let { TournamentShips.getOrCreate(it) })
 
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         super.onPlace(state, level, pos, oldState, isMoving)
