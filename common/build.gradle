@@ -15,7 +15,7 @@ dependencies {
     modApi("org.valkyrienskies:valkyrienskies-$vs2_mc_version-common:${rootProject.vs2_version}")
 
     compileOnly("org.valkyrienskies.core:api:${vs_core_version}")
-    compileOnly("org.valkyrienskies.core:api-game:${vs_core_version}")
+    compileOnly("org.valkyrienskies.core:internal:${vs_core_version}")
     compileOnly("org.valkyrienskies.core:util:${vs_core_version}")
     compileOnly("org.valkyrienskies.core:impl:${vs_core_version}")
 
