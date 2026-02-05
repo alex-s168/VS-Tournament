@@ -84,7 +84,7 @@ data class FuelType(
 
 object TournamentFuelManager {
     private val fuelConfigDir = File(
-        Platform.getConfigFolder().toFile(),
+        TournamentMod.configFolder!!,
         "vs_tournament/fuels"
     )
 

@@ -22,7 +22,7 @@
       "org.valkyrienskies.tournament.fabric.TournamentModFabric"
     ],
     "client": [
-      "org.valkyrienskies.tournament.fabric.TournamentModFabric$Client"
+      "org.valkyrienskies.tournament.fabric.TournamentModFabric${'$'}Client"
     ],
     "preLaunch": [
       "org.valkyrienskies.tournament.fabric.ValkyrienPreLaunch"
