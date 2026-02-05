@@ -1,11 +1,14 @@
 package org.valkyrienskies.tournament.util.extension
 
+import dev.architectury.platform.Mod
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentContents
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.FormattedCharSequence
+import net.minecraftforge.fml.config.ModConfig
+import org.valkyrienskies.mod.common.config.ConfigType
 import java.io.File
 
 fun void() =
@@ -66,3 +69,11 @@ class StyledComponent(
 
 inline fun Component.withStyle(fn: (Style) -> Style): Component =
     StyledComponent(this, fn(this.style))
+
+fun ConfigType.toForge(): ModConfig.Type =
+    when (this) {
+        ConfigType.CORE_SERVER -> ModConfig.Type.SERVER
+        ConfigType.SERVER -> ModConfig.Type.SERVER
+        ConfigType.CLIENT -> ModConfig.Type.CLIENT
+        ConfigType.COMMON -> ModConfig.Type.COMMON
+    }

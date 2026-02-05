@@ -1,7 +1,7 @@
 package org.valkyrienskies.tournament.fabric;
 
-import com.terraformersmc.modmenu.api.ConfigScreenFactory;
-import com.terraformersmc.modmenu.api.ModMenuApi;
+import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
+import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -15,17 +15,26 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.jetbrains.annotations.NotNull;
-import org.valkyrienskies.core.impl.config.VSConfigClass;
 import org.valkyrienskies.tournament.*;
-import org.valkyrienskies.mod.compat.clothconfig.VSClothConfig;
 import org.valkyrienskies.mod.fabric.common.ValkyrienSkiesModFabric;
 import org.valkyrienskies.tournament.registry.CreativeTabs;
 
 public class TournamentModFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        // force VS2 to load before Tournament
         new ValkyrienSkiesModFabric().onInitialize();
+
+        for (var config : TournamentConfigUpdater.ALL_CONFIGS) {
+            ForgeConfigRegistry.INSTANCE.register(
+                    TournamentMod.MOD_ID,
+                    config.forgeType(),
+                    config.spec,
+                    config.path
+            );
+        }
+
+        ModConfigEvents.reloading(TournamentMod.MOD_ID).register(TournamentConfigUpdater::update);
+        ModConfigEvents.loading(TournamentMod.MOD_ID).register(TournamentConfigUpdater::update);
 
         Registry.register(
                 BuiltInRegistries.CREATIVE_MODE_TAB,
@@ -57,16 +66,6 @@ public class TournamentModFabric implements ModInitializer {
                     @NotNull BlockEntityRendererProvider<T> r) {
                 BlockEntityRendererRegistry.register(t, r);
             }
-        }
-    }
-
-    public static class ModMenu implements ModMenuApi {
-        @Override
-        public ConfigScreenFactory<?> getModConfigScreenFactory() {
-            return (parent) -> VSClothConfig.createConfigScreenFor(
-                    parent,
-                    VSConfigClass.Companion.getRegisteredConfig(TournamentConfig.class)
-            );
         }
     }
 }

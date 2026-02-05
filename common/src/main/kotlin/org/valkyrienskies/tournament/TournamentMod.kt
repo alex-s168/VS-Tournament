@@ -5,10 +5,11 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import org.valkyrienskies.core.api.ships.getAttachment
 import org.valkyrienskies.core.api.ships.saveAttachment
-import org.valkyrienskies.core.impl.config.VSConfigClass
 import org.valkyrienskies.core.impl.hooks.VSEvents
 import org.valkyrienskies.tournament.ship.*
 import org.valkyrienskies.tournament.util.extension.with
+
+// TODO: remove chunkloader
 
 object TournamentMod {
     const val MOD_ID = "vs_tournament"
@@ -16,7 +17,6 @@ object TournamentMod {
     @JvmStatic
     fun init() {
         TournamentNetworking.register
-        VSConfigClass.registerConfig("vs_tournament", TournamentConfig::class.java)
         TournamentBlocks.register
         TournamentBlockEntities.register
         TournamentItems.register

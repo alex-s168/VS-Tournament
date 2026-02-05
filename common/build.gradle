@@ -22,7 +22,9 @@ dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     api "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    implementation("me.alex_s168:blitz:${rootProject.blitz_version}")
+    implementation "me.alex_s168:blitz:${rootProject.blitz_version}"
+
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.0"
 }
 
 publishing {
