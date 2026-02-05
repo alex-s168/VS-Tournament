@@ -54,11 +54,6 @@ class SpinnerBlock : DirectionalBlock(
         super.createBlockStateDefinition(builder)
     }
 
-    private fun getShipControl(level: ServerLevel, pos: BlockPos) =
-        (level.getShipObjectManagingPos(pos)
-            ?: level.getShipManagingPos(pos))
-            ?.let { TournamentShips.getOrCreate(it) }
-
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         super.onPlace(state, level, pos, oldState, isMoving)
 
@@ -68,13 +63,13 @@ class SpinnerBlock : DirectionalBlock(
         val signal = level.getBestNeighborSignal(pos)
         level.setBlock(pos, state.setValue(BlockStateProperties.POWER, signal), 2)
 
-        getShipControl(level, pos)?.addSpinner(
-                pos.toJOML(),
-                state.getValue(FACING)
-                    .opposite
-                    .normal
-                    .toJOMLD()
-                    .mul(state.getValue(BlockStateProperties.POWER).toDouble())
+        TournamentShips.get(level, pos)?.addSpinner(
+            pos.toJOML(),
+            state.getValue(FACING)
+                .opposite
+                .normal
+                .toJOMLD()
+                .mul(state.getValue(BlockStateProperties.POWER).toDouble())
         )
     }
 
@@ -84,7 +79,7 @@ class SpinnerBlock : DirectionalBlock(
         if (level.isClientSide) return
         level as ServerLevel
 
-        getShipControl(level, pos)?.removeSpinner(
+        TournamentShips.get(level, pos)?.removeSpinner(
             pos.toJOML()
         )
     }

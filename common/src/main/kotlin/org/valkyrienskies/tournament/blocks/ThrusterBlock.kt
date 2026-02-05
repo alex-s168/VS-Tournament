@@ -19,7 +19,6 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.material.MapColor
-import net.minecraft.world.level.storage.loot.LootContext
 import net.minecraft.world.level.storage.loot.LootParams
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.shapes.CollisionContext
@@ -36,7 +35,6 @@ import org.valkyrienskies.tournament.doc.documentation
 import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.DirectionalShape
 import org.valkyrienskies.tournament.util.RotShapes
-import java.util.*
 
 class ThrusterBlock(
     private val mult: () -> Double,
@@ -226,6 +224,7 @@ class ThrusterBlock(
                 .summary("There are two variants. A small thruster and a \"normal\" thruster.")
                 .summary("The thruster is only active when redstone powered. " +
                          "It can be upgraded by right-clicking on it with a thruster upgrade.")
+                .summary("The thruster's performance depends on the fuel type being used.")
                 .section("Config") {
                     content("The maximum thruster tier is ${TournamentConfig.SERVER.thrusterTiersNormal} for the normal thruster, " +
                             "and ${TournamentConfig.SERVER.thrusterTiersTiny} for the small thruster.")
@@ -233,7 +232,6 @@ class ThrusterBlock(
                             "which gets multiplied by the tier / level of the thruster.")
                     content("The small thruster is ${TournamentConfig.SERVER.thrusterTinyForceMultiplier}x as powerful as the normal thruster " +
                             "=> ${TournamentConfig.SERVER.thrusterTinyForceMultiplier * TournamentConfig.SERVER.thrusterSpeed} N")
-                    content("Thrusters shut off at a speed of ${TournamentConfig.SERVER.thrusterShutoffSpeed} m/s")
                 }
         }
     }

@@ -21,6 +21,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
+import org.valkyrienskies.mod.api.dimensionId
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod
 import org.valkyrienskies.mod.common.shipObjectWorld
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentDebugHelper
@@ -104,8 +106,9 @@ class RopeHookBlock : DirectionalBaseEntityBlock(
 
     fun dropConstraints(level: ServerLevel, pos: BlockPos) {
         val be = level.getBlockEntity(pos) as RopeHookBlockEntity
+        val gpta = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
 
-        if(be.isSecondary) {
+        if (be.isSecondary) {
             val t = be.conPos?.let { level.getBlockState(it) }
 
             try {
@@ -122,7 +125,7 @@ class RopeHookBlock : DirectionalBaseEntityBlock(
                     }
                 }
                 pbe.ropeId?.let {
-                    level.shipObjectWorld.removeConstraint( it )
+                    gpta.removeJoint(it)
                 }
                 TournamentDebugHelper.removeObject(pbe.debugID)
                 pbe.otherPos = null
@@ -141,7 +144,7 @@ class RopeHookBlock : DirectionalBaseEntityBlock(
         }
 
         TournamentDebugHelper.removeObject(be.debugID)
-        be.ropeId?.let { level.shipObjectWorld.removeConstraint(it) }
+        be.ropeId?.let { gpta.removeJoint(it) }
         be.otherPos = null
         be.ropeId = 0
         be.debugID = -1
