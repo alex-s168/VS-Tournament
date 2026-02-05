@@ -119,7 +119,7 @@ class ChunkLoaderManager private constructor(
 
             if (!tickTaskSet) {
                 tickTaskSet = true
-                TickScheduler.serverTickPerm(tickTask)
+                TickScheduler.everyServerTick(tickTask)
             }
 
             return lm

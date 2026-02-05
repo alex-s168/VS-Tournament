@@ -7,6 +7,7 @@ import net.minecraft.world.item.Item
 
 object TournamentTags {
 
+    // TODO: why is this unused
     val MC_WOOL: TagKey<Item> = TagKey.create(
         Registries.ITEM,
         ResourceLocation("wool")

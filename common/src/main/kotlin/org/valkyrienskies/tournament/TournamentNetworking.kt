@@ -6,30 +6,12 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.ResourceLocation
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.impl.game.ships.ShipObjectServerWorld
 import org.valkyrienskies.core.impl.networking.simple.SimplePacket
-import org.valkyrienskies.core.impl.networking.simple.register
-import org.valkyrienskies.core.impl.networking.simple.registerClientHandler
-import org.valkyrienskies.core.impl.networking.simple.sendToAllClients
 import org.valkyrienskies.mod.common.vsCore
 import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.extension.once
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 object TournamentNetworking {
-    @OptIn(ExperimentalContracts::class)
-    private fun <R: Any> runIfServer(fn: () -> R): R? {
-        contract {
-            callsInPlace(fn, InvocationKind.AT_MOST_ONCE)
-        }
-
-        return if (vsCore.dummyShipWorldServer is ShipObjectServerWorld) {
-            fn()
-        } else null
-    }
-
     data class ShipFuelTypeChange(
         val ship: ShipId,
         val fuel: String?,
@@ -46,12 +28,7 @@ object TournamentNetworking {
             fuelKey()?.let(TournamentFuelManager.fuels::get)
 
         fun send() {
-            runIfServer {
-                // TODO after vs update
-                // with(vsCore.simplePacketNetworking) {
-                this.sendToAllClients()
-                // }
-            }
+            vsCore.simplePacketNetworking.sendToAllClients(this)
         }
 
         fun clientHandler() {
@@ -72,12 +49,7 @@ object TournamentNetworking {
             throttle < 0.0f
 
         fun send() {
-            runIfServer {
-                // TODO after vs update
-                // with(vsCore.simplePacketNetworking) {
-                this.sendToAllClients()
-                // }
-            }
+            vsCore.simplePacketNetworking.sendToAllClients(this)
         }
 
         fun clientHandler() {
@@ -98,12 +70,7 @@ object TournamentNetworking {
         val remove: Boolean
     ): SimplePacket {
         fun send() {
-            runIfServer {
-                // TODO after vs update
-                // with(vsCore.simplePacketNetworking) {
-                this.sendToAllClients()
-                // }
-            }
+            vsCore.simplePacketNetworking.sendToAllClients(this)
         }
 
         fun clientHandler() {
@@ -141,12 +108,7 @@ object TournamentNetworking {
         }
 
         fun send() {
-            runIfServer {
-                // TODO after vs update
-                // with(vsCore.simplePacketNetworking) {
-                this.sendToAllClients()
-                // }
-            }
+            vsCore.simplePacketNetworking.sendToAllClients(this)
         }
 
         fun clientHandler() {
@@ -158,20 +120,18 @@ object TournamentNetworking {
     }
 
     val register by once {
-        // TODO after vs update
-        // with(vsCore.simplePacketNetworking) {
-        ShipFuelTypeChange::class.register()
-        ShipThrusterChange::class.register()
-        ShaftSpeedChange::class.register()
-        ShaftBlockChange::class.register()
-        // }
+        with(vsCore.simplePacketNetworking) {
+            ShipFuelTypeChange::class.register()
+            ShipThrusterChange::class.register()
+            ShaftSpeedChange::class.register()
+            ShaftBlockChange::class.register()
+        }
 
-        // TODO after vs update
-        // with(vsCore.simplePacketNetworking) {
-        ShipFuelTypeChange::class.registerClientHandler(ShipFuelTypeChange::clientHandler)
-        ShipThrusterChange::class.registerClientHandler(ShipThrusterChange::clientHandler)
-        ShaftSpeedChange::class.registerClientHandler(ShaftSpeedChange::clientHandler)
-        ShaftBlockChange::class.registerClientHandler(ShaftBlockChange::clientHandler)
-        // }
+        with(vsCore.simplePacketNetworking) {
+            ShipFuelTypeChange::class.registerClientHandler(ShipFuelTypeChange::clientHandler)
+            ShipThrusterChange::class.registerClientHandler(ShipThrusterChange::clientHandler)
+            ShaftSpeedChange::class.registerClientHandler(ShaftSpeedChange::clientHandler)
+            ShaftBlockChange::class.registerClientHandler(ShaftBlockChange::clientHandler)
+        }
     }
 }

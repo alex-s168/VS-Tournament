@@ -18,6 +18,7 @@ object TournamentModels {
             .loadBakedModel(rl)
 
         if (model == null) {
+            // TODO: proper logging
             println("[Tournament] Failed to load model $rl")
             return Minecraft.getInstance().modelManager.missingModel
         }

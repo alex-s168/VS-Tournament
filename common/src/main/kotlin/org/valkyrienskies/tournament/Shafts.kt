@@ -270,7 +270,7 @@ class ServerShaftMan private constructor(level: ServerLevel): CommonShaftMan<Ser
     }
 
     init {
-        TickScheduler.serverTickPerm {
+        TickScheduler.everyServerTick {
             shafts.forEach(ServerShaft::tick)
         }
     }

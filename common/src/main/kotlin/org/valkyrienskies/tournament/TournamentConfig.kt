@@ -56,9 +56,6 @@ object TournamentConfig {
         @ConfigEntry(description = "for new thrusters: throttle / fuel usage mult of tiny thrusters ; for old thrusters: force multiplier of tiny thruster")
         var thrusterTinyForceMultiplier = 0.2
 
-        @ConfigEntry(description = "The speed at which the thruster will stop applying force. (-1 means that it always applies force)")
-        var thrusterShutoffSpeed = 80.0
-
         @ConfigEntry(description = "Amount of fuel items a fuel container can hold ; halfed for slab fuel tanks")
         var fuelContainerCap = 100.0
 

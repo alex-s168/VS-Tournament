@@ -1,10 +1,7 @@
 package org.valkyrienskies.tournament.ship
 
 import blitz.Either
-import blitz.mapA
-import blitz.mapB
 import blitz.collections.remove
-import blitz.flatten
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.common.util.concurrent.AtomicDouble
@@ -16,13 +13,20 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
 import org.joml.Vector3d
 import org.joml.Vector3i
-import org.valkyrienskies.core.api.ships.*
+import org.valkyrienskies.core.api.VsBeta
+import org.valkyrienskies.core.api.attachment.getAttachment
+import org.valkyrienskies.core.api.ships.LoadedServerShip
+import org.valkyrienskies.core.api.ships.PhysShip
+import org.valkyrienskies.core.api.ships.Ship
+import org.valkyrienskies.core.api.ships.ShipPhysicsListener
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.apigame.world.properties.DimensionId
-import org.valkyrienskies.core.impl.game.ships.PhysShipImpl
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.core.api.util.PhysTickOnly
+import org.valkyrienskies.core.api.world.PhysLevel
+import org.valkyrienskies.core.api.world.properties.DimensionId
 import org.valkyrienskies.core.util.pollUntilEmpty
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
-import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.util.toBlockPos
 import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toJOMLD
@@ -45,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference
     isGetterVisibility = JsonAutoDetect.Visibility.NONE,
     setterVisibility = JsonAutoDetect.Visibility.NONE
 )
-class TournamentShips: ShipForcesInducer {
+class TournamentShips: ShipPhysicsListener {
 
     var level: DimensionId = "minecraft:overworld"
         private set
@@ -153,7 +157,7 @@ class TournamentShips: ShipForcesInducer {
     @JsonIgnore
     private var ticker: TickScheduler.Ticking? = null
 
-    @Volatile
+    @Deprecated("kept for save file compat")
     var wasLastShutOff = false
 
     fun dryForce(thruster: ThrusterDataV2): Vector3d {
@@ -161,7 +165,7 @@ class TournamentShips: ShipForcesInducer {
         val force = useFuelThrottlePreview(thruster.throttle)
 
         var fact = 1.0
-        if (!force.isFinite() || wasLastShutOff || thruster.submerged) {
+        if (!force.isFinite() || thruster.submerged) {
             fact = 0.0
         }
 
@@ -170,26 +174,23 @@ class TournamentShips: ShipForcesInducer {
 
     fun dryForce(thruster: ThrusterData): Vector3d {
         var fact = 1.0
-        if (wasLastShutOff || thruster.submerged) {
+        if (thruster.submerged) {
             fact = 0.0
         }
 
         return thruster.force.mul(thruster.mult * TournamentConfig.SERVER.thrusterSpeed * fact)
     }
 
-    fun dryForce(thruster: Either<ThrusterData, ThrusterDataV2>) =
-        thruster
-            .mapA { dryForce(it) }
-            .mapB { dryForce(it) }
-            .flatten()
-
     @JsonIgnore
     private var lastFuelType = fuelType
     @JsonIgnore
     private val filteredUpdates = mutableSetOf<Long>() // TODO: replace with faster long set
-    override fun applyForces(physShip: PhysShip) {
-        physShip as PhysShipImpl
 
+    @OptIn(PhysTickOnly::class, VsBeta::class)
+    override fun physTick(
+        physShip: PhysShip,
+        physLevel: PhysLevel
+    ) {
         toUpdateV2.pollUntilEmpty {
             filteredUpdates.add(it)
         }
@@ -225,19 +226,12 @@ class TournamentShips: ShipForcesInducer {
         }
 
         if (ticker == null) {
-            ticker = TickScheduler.serverTickPerm(::tickfn)
+            ticker = TickScheduler.everyServerTick(::tickfn)
             TournamentNetworking.ShipFuelTypeChange(
                 physShip.id,
                 TournamentFuelManager.getKey(fuelType)
             ).send()
         }
-
-        val vel = physShip.poseVel.vel
-
-        val notShutOff = TournamentConfig.SERVER.thrusterShutoffSpeed == -1.0 ||
-                         physShip.poseVel.vel.length() < TournamentConfig.SERVER.thrusterShutoffSpeed
-
-        wasLastShutOff = !notShutOff
 
         thrustersV2.forEach { (pos, t) ->
             thrustersV2_2[thrustersV2_2.index(pos.toBlock())] = t
@@ -253,7 +247,7 @@ class TournamentShips: ShipForcesInducer {
             // actual fuel is used at game tick
             val force = useFuelThrottlePreview(t.throttle)
 
-            if (force == 0.0f || !force.isFinite() || !notShutOff) {
+            if (force == 0.0f || !force.isFinite()) {
                 t.lastPower = 0.0f
                 return@forEach
             }
@@ -279,7 +273,7 @@ class TournamentShips: ShipForcesInducer {
             val tForce = physShip.transform.shipToWorld.transformDirection(force, Vector3d())
             val tPos = pos.toDouble().add(0.5, 0.5, 0.5).sub(physShip.transform.positionInShip)
 
-            if (force.isFinite && notShutOff) {
+            if (force.isFinite) {
                 physShip.applyInvariantForceToPos(tForce.mul(TournamentConfig.SERVER.thrusterSpeed * tier), tPos)
             }
         }
@@ -291,9 +285,9 @@ class TournamentShips: ShipForcesInducer {
             val tHeight = physShip.transform.positionInWorld.y()
             var tPValue = TournamentConfig.SERVER.balloonBaseHeight - ((tHeight * tHeight) / 1000.0)
 
-            if (vel.y() > 10.0)    {
-                tPValue = (-vel.y() * 0.25)
-                tPValue -= (vel.y() * 0.25)
+            if (physShip.velocity.y() > 10.0)    {
+                tPValue = (-physShip.velocity.y() * 0.25)
+                tPValue -= (physShip.velocity.y() * 0.25)
             }
             if(tPValue <= 0){
                 tPValue = 0.0
@@ -446,20 +440,23 @@ class TournamentShips: ShipForcesInducer {
     }
 
     companion object {
-        fun getOrCreate(ship: ServerShip, level: DimensionId) =
+        @OptIn(GameTickOnly::class, VsBeta::class)
+        fun getOrCreate(ship: LoadedServerShip, level: DimensionId) =
             ship.getAttachment<TournamentShips>()
                 ?: TournamentShips().also {
                     it.level = level
-                    ship.saveAttachment(it)
+                    ship.setAttachment(it)
                 }
 
-        fun getOrCreate(ship: ServerShip): TournamentShips =
+        @OptIn(GameTickOnly::class)
+        fun getOrCreate(ship: LoadedServerShip): TournamentShips =
             getOrCreate(ship, ship.chunkClaimDimension)
 
+        @OptIn(GameTickOnly::class)
         fun get(level: Level, pos: BlockPos)  =
-            ((level.getShipObjectManagingPos(pos)
+            ((level.getLoadedShipManagingPos(pos)
                 ?: level.getShipManagingPos(pos))
-                    as? ServerShip)?.let { getOrCreate(it) }
+                    as? LoadedServerShip)?.let { getOrCreate(it) }
     }
 
     @Environment(EnvType.CLIENT)

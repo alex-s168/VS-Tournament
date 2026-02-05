@@ -14,7 +14,7 @@ object TickScheduler {
     /**
      * Adds a temporary task to be run ONCE on the server thread.
      */
-    fun serverTickTemp(f: (MinecraftServer) -> Unit): Ticking {
+    fun serverTickOnce(f: (MinecraftServer) -> Unit): Ticking {
         val t = Ticking(f, false)
         serverTickTemp += t
         return t
@@ -23,7 +23,7 @@ object TickScheduler {
     /**
      * Adds a permanent task to be run every tick on the server thread.
      */
-    fun serverTickPerm(f: (MinecraftServer) -> Unit): Ticking {
+    fun everyServerTick(f: (MinecraftServer) -> Unit): Ticking {
         val t = Ticking(f, true)
         serverTickPerm += t
         return t
