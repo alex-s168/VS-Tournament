@@ -103,9 +103,6 @@ object TournamentConfig {
 
         @ConfigEntry(description = "a")
         var rotatorAccel = 1.8f
-
-        @ConfigEntry(description = "DO NOT CHANGE THIS UNLESS YOU KNOW WHAT YOU ARE DOING!")
-        var removeAllAttachments = false
     }
 }
 

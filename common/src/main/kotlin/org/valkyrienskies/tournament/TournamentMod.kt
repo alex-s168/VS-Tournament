@@ -17,38 +17,28 @@ import org.valkyrienskies.tournament.util.extension.with
 
 @OptIn(GameTickOnly::class, VsBeta::class)
 private fun migrateShipController(ship: LoadedServerShip) {
-    if (TournamentConfig.SERVER.removeAllAttachments) {
-        ship.removeAttachment<BalloonShipControl>()
-        ship.removeAttachment<PulseShipControl>()
-        ship.removeAttachment<SpinnerShipControl>()
+    val thrusterShipCtrl = ship.getAttachment<ThrusterShipControl>()
+    if (thrusterShipCtrl != null) {
+        TournamentShips.getOrCreate(ship).addThrustersV1(thrusterShipCtrl.Thrusters.with(thrusterShipCtrl.thrusters))
         ship.removeAttachment<ThrusterShipControl>()
-        ship.removeAttachment<tournamentShipControl>()
-        ship.removeAttachment<TournamentShips>()
     }
-    else {
-        val thrusterShipCtrl = ship.getAttachment<ThrusterShipControl>()
-        if (thrusterShipCtrl != null) {
-            TournamentShips.getOrCreate(ship).addThrustersV1(thrusterShipCtrl.Thrusters.with(thrusterShipCtrl.thrusters))
-            ship.removeAttachment<ThrusterShipControl>()
-        }
 
-        val balloonShipCtrl = ship.getAttachment<BalloonShipControl>()
-        if (balloonShipCtrl != null) {
-            TournamentShips.getOrCreate(ship).addBalloons(balloonShipCtrl.balloons)
-            ship.removeAttachment<BalloonShipControl>()
-        }
+    val balloonShipCtrl = ship.getAttachment<BalloonShipControl>()
+    if (balloonShipCtrl != null) {
+        TournamentShips.getOrCreate(ship).addBalloons(balloonShipCtrl.balloons)
+        ship.removeAttachment<BalloonShipControl>()
+    }
 
-        val spinnerShipCtrl = ship.getAttachment<SpinnerShipControl>()
-        if (spinnerShipCtrl != null) {
-            TournamentShips.getOrCreate(ship).addSpinners(spinnerShipCtrl.spinners.with(spinnerShipCtrl.Spinners))
-            ship.removeAttachment<SpinnerShipControl>()
-        }
+    val spinnerShipCtrl = ship.getAttachment<SpinnerShipControl>()
+    if (spinnerShipCtrl != null) {
+        TournamentShips.getOrCreate(ship).addSpinners(spinnerShipCtrl.spinners.with(spinnerShipCtrl.Spinners))
+        ship.removeAttachment<SpinnerShipControl>()
+    }
 
-        val pulsesShipCtrl = ship.getAttachment<PulseShipControl>()
-        if (pulsesShipCtrl != null) {
-            pulsesShipCtrl.addToNew(TournamentShips.getOrCreate(ship))
-            ship.removeAttachment<PulseShipControl>()
-        }
+    val pulsesShipCtrl = ship.getAttachment<PulseShipControl>()
+    if (pulsesShipCtrl != null) {
+        pulsesShipCtrl.addToNew(TournamentShips.getOrCreate(ship))
+        ship.removeAttachment<PulseShipControl>()
     }
 }
 
