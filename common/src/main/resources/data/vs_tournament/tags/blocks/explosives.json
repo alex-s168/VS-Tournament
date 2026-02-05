@@ -4,6 +4,7 @@
     "vs_tournament:explosive_instant_large",
     "vs_tournament:explosive_instant_medium",
     "vs_tournament:explosive_instant_small",
-    "vs_tournament:explosive_staged_small"
+    "vs_tournament:explosive_staged_small",
+    "vs_tournament:explosive_experimental_unstable_shrapnel"
   ]
 }

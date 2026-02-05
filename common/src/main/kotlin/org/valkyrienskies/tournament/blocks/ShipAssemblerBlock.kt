@@ -63,12 +63,10 @@ class ShipAssemblerBlock : DirectionalBlock (
         pos: BlockPos,
         player: ServerPlayer?
     ) : Boolean {
-        val blacklist = TournamentConfig.SERVER.blockBlacklist
-
         if (level.isChunkInShipyard(pos.x shr 4, pos.z shr 4)) {
             return false
         } else if (!state.isAir) {
-            val structure = ShipAssembler.findStructure(level, pos, blacklist)
+            val structure = ShipAssembler.findStructure(level, pos)
             println(structure.size)
             val shipData = createNewShipWithBlocks(pos, structure, level)
 
