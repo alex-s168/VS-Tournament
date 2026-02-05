@@ -18,6 +18,7 @@ import org.valkyrienskies.tournament.blockentity.render.SensorBlockEntityRender
 import org.valkyrienskies.tournament.blockentity.render.TransparentFuelTankBlockEntityRender
 import org.valkyrienskies.tournament.registry.DeferredRegister
 import org.valkyrienskies.tournament.registry.RegistrySupplier
+import org.valkyrienskies.tournament.util.extension.once
 
 @Suppress("unused")
 object TournamentBlockEntities {
@@ -101,7 +102,7 @@ object TournamentBlockEntities {
 
     }
 
-    fun register() {
+    val register by once {
         BLOCKENTITIES.applyAll()
     }
 

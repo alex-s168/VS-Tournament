@@ -19,8 +19,7 @@ import org.valkyrienskies.tournament.items.old.OldItem
 import org.valkyrienskies.tournament.items.old.UpdateItem
 import org.valkyrienskies.tournament.registry.DeferredRegister
 import org.valkyrienskies.tournament.registry.RegistrySupplier
-import org.valkyrienskies.tournament.util.ArmorMaterialD
-import org.valkyrienskies.tournament.util.TierD
+import org.valkyrienskies.tournament.util.extension.once
 
 @Suppress("unused")
 object TournamentItems {
@@ -33,19 +32,13 @@ object TournamentItems {
     lateinit var UPGRADE_THRUSTER  :  RegistrySupplier<Item>
     lateinit var GIFT_BAG          :  RegistrySupplier<GiftBagItem>
     lateinit var INGOT_PHYNITE     :  RegistrySupplier<Item>
-    lateinit var PHYGOLD_SWORD     :  RegistrySupplier<SwordItem>
-    lateinit var STEEL_INGOT       :  RegistrySupplier<Item>
     lateinit var WOOL_SHEET        :  RegistrySupplier<Item>
     lateinit var UNSTABLE_LAPIS    :  RegistrySupplier<Item>
 
     val TAB: ResourceKey<CreativeModeTab> =
         ResourceKey.create(Registries.CREATIVE_MODE_TAB, ResourceLocation(TournamentMod.MOD_ID, "main_tab"))
 
-    lateinit var TIER_PHYGOLD      : Tier
-    lateinit var TIER_STEEL        : Tier
-    lateinit var ARMOR_STEEL       : ArmorMaterial
-
-    fun register() {
+    val register by once {
         ROPE                    = ITEMS.register("rope", ::RopeItem)
         TOOL_PULSEGUN           = ITEMS.register("pulse_gun", ::PulseGunItem)
         TOOL_DELETEWAND         = ITEMS.register("delete_wand", ::ShipDeleteWandItem)
@@ -72,64 +65,6 @@ object TournamentItems {
         }
 
         ITEMS.register("physics_shard") {
-            Item(Properties().stacksTo(64))
-        }
-
-        TIER_PHYGOLD = TierD(3, 1561, 8.0f, 3.5f, 20, Ingredient.of(INGOT_PHYNITE.get()))
-
-        PHYGOLD_SWORD = ITEMS.register("phygold_sword") {
-            SwordItem(TIER_PHYGOLD, 3, -2.4f, Properties())
-        }
-
-        STEEL_INGOT = ITEMS.register("steel_ingot") {
-            Item(Properties().stacksTo(64))
-        }
-
-        ARMOR_STEEL = ArmorMaterialD(
-            "steel",
-            15,
-            listOf(3, 6, 7, 3),
-            7,
-            SoundEvents.ARMOR_EQUIP_IRON,
-            0f,
-            0f
-        ) { Ingredient.of(STEEL_INGOT.get()) }
-
-        ITEMS.register("steel_helmet") {
-            ArmorItem(ARMOR_STEEL, EquipmentSlot.HEAD, Properties())
-        }
-
-        ITEMS.register("steel_chestplate") {
-            ArmorItem(ARMOR_STEEL, EquipmentSlot.CHEST, Properties())
-        }
-
-        ITEMS.register("steel_leggings") {
-            ArmorItem(ARMOR_STEEL, EquipmentSlot.LEGS, Properties())
-        }
-
-        ITEMS.register("steel_boots") {
-            ArmorItem(ARMOR_STEEL, EquipmentSlot.FEET, Properties())
-        }
-
-        TIER_STEEL = TierD(3, 1561, 8.0f, 3.2f, 7, Ingredient.of(STEEL_INGOT.get()))
-
-        ITEMS.register("steel_axe") {
-            AxeItem(TIER_STEEL, 7.0F, -3.1F, Properties())
-        }
-
-        ITEMS.register("steel_pickaxe") {
-            PickaxeItem(TIER_STEEL, 1, -2.8F, Properties())
-        }
-
-        ITEMS.register("steel_shovel") {
-            ShovelItem(TIER_STEEL, 1.5f, -3.0F, Properties())
-        }
-
-        ITEMS.register("steel_sword") {
-            SwordItem(TIER_STEEL, 3, -2.4f, Properties())
-        }
-
-        ITEMS.register("steel_gear") {
             Item(Properties().stacksTo(64))
         }
 

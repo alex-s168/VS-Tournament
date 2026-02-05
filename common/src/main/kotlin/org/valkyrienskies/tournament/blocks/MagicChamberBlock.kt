@@ -11,13 +11,13 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockState
-import net.minecraft.world.level.material.Material
+import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.Vec3
 import org.valkyrienskies.tournament.TournamentItems
 
 class MagicChamberBlock: Block(
-    Properties.of(Material.METAL)
+    Properties.of().mapColor(MapColor.METAL)
     .sound(SoundType.STONE).strength(5.0f, 5.0f)
 ) {
 
@@ -38,7 +38,7 @@ class MagicChamberBlock: Block(
 
                     in 0.5f..0.7f -> {
                         val c = Vec3.atCenterOf(pos)
-                        level.explode(null, c.x, c.y, c.z, 1f, Explosion.BlockInteraction.BREAK)
+                        level.explode(null, c.x, c.y, c.z, 1f, Level.ExplosionInteraction.TNT)
                     }
 
                     else -> {

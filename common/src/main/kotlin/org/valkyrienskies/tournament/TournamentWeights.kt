@@ -13,9 +13,11 @@ import org.valkyrienskies.physics_api.Lod1LiquidBlockStateId
 import org.valkyrienskies.physics_api.Lod1SolidBlockStateId
 import org.valkyrienskies.physics_api.voxel.Lod1LiquidBlockState
 import org.valkyrienskies.physics_api.voxel.Lod1SolidBlockState
+import org.valkyrienskies.tournament.util.extension.once
+import org.valkyrienskies.tournament.util.extension.void
 
 object TournamentWeights  {
-    fun register() {
+    val register by once {
         Registry.register(BlockStateInfo.REGISTRY, ResourceLocation(TournamentMod.MOD_ID, "ballast"), Ballast)
     }
 

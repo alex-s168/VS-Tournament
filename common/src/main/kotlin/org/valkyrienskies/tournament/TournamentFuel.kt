@@ -2,22 +2,26 @@ package org.valkyrienskies.tournament
 
 import net.minecraft.world.item.ItemStack
 import dev.architectury.platform.Platform
-import net.minecraft.core.Registry
+import net.minecraft.core.RegistryAccess
 import net.minecraft.core.particles.ParticleOptions
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
-import net.minecraft.network.chat.TextComponent
-import net.minecraft.network.chat.TranslatableComponent
+import net.minecraft.network.chat.contents.LiteralContents
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.resources.ResourceLocation
-import org.valkyrienskies.tournament.util.ParticleParser
+import org.valkyrienskies.tournament.util.extension.applyStyle
 import org.valkyrienskies.tournament.util.extension.contentsRecOnlyFiles
 import org.valkyrienskies.tournament.util.extension.resLoc
+import org.valkyrienskies.tournament.util.extension.toComponent
+import org.valkyrienskies.tournament.util.parseParticle
 import java.io.File
 import java.io.Reader
 import java.util.Properties
 import kotlin.math.round
+
+// TODO: STORE IN DATAPACK
 
 data class FuelType(
     // when off
@@ -59,7 +63,7 @@ data class FuelType(
         basePower + powerPerThrottle * throttle
 
     companion object {
-        fun read(cfg: Properties) =
+        fun read(access: RegistryAccess, cfg: Properties) =
             FuelType(
                 standbyBurnRate = cfg.getProperty("standbyBurnRate", "0").toFloat(),
                 baseBurnRate = cfg.getProperty("baseBurnRate", "0").toFloat(),
@@ -68,7 +72,7 @@ data class FuelType(
                 powerPerThrottle = cfg.getProperty("powerPerThrottle").toFloat(),
                 particles = cfg.getProperty("particleType", "").let {
                     if (it.isEmpty()) null
-                    else ParticleParser.parse(it)
+                    else parseParticle(access, it)
                 },
                 particleVelocity = cfg.getProperty("particleVelocity", "0.4").toFloat(),
                 particleSpread = cfg.getProperty("particleSpread", "0.0").toFloat(),
@@ -111,7 +115,7 @@ object TournamentFuelManager {
         }
     }
 
-    fun register(path: String, reader: Reader) {
+    fun register(access: RegistryAccess, path: String, reader: Reader) {
         try {
             val cfg = Properties()
             cfg.load(reader)
@@ -123,7 +127,7 @@ object TournamentFuelManager {
                         "registration of custom fuel only allowed in namespace: ${TournamentMod.MOD_ID}"
                     }
             }
-            val settings = FuelType.read(cfg)
+            val settings = FuelType.read(access, cfg)
 
             if (create)
                 TournamentItems.fuelItems.add(path.path to settings)
@@ -135,18 +139,20 @@ object TournamentFuelManager {
         }
     }
 
-    fun register(file: File) {
+    fun register(access: RegistryAccess, file: File) {
         if (file.name == "noupdate") return
-        register(file.absolutePath, file.bufferedReader())
+        register(access, file.absolutePath, file.bufferedReader())
     }
 
-    fun registerDirRec(dir: File) {
+    fun registerDirRec(access: RegistryAccess, dir: File) {
         dir.contentsRecOnlyFiles()
-            .forEach(::register)
+            .forEach {
+                register(access, it)
+            }
     }
 
-    fun registerTournamentConfigDir() {
-        registerDirRec(fuelConfigDir)
+    fun registerTournamentConfigDir(access: RegistryAccess) {
+        registerDirRec(access, fuelConfigDir)
     }
 
     init {
@@ -157,15 +163,16 @@ object TournamentFuelManager {
                 (round(num * 1_000_000f) / 1_000_000f).toString()
 
             fun tc(key: String, vararg args: Any, styleMod: (Style) -> Style = { it }): MutableComponent =
-                TranslatableComponent("tooltip.vs_tournament.fuel.$key", *args)
-                    .withStyle(styleMod)
+                TranslatableContents("tooltip.vs_tournament.fuel.$key", "$key Fuel", args)
+                    .toComponent()
+                    .applyStyle(styleMod)
 
             fun t(key: String, vararg args: Any, styleMod: (Style) -> Style = { it }) {
                 tooltipComponents += tc(key, *args, styleMod)
             }
 
             fun separator() {
-                tooltipComponents += TextComponent("")
+                tooltipComponents += LiteralContents("").toComponent()
             }
 
             // TODO: merge with vs mass tooltips code (also has pounds cfg and conversion)
@@ -191,7 +198,7 @@ object TournamentFuelManager {
 }
 
 fun ItemStack.tournamentFuel(): FuelType? =
-    TournamentFuelManager.fuels[Registry.ITEM.getKey(item)]
+    TournamentFuelManager.fuels[item.`arch$registryName`()!!]
 
 private val defaultFuels = mapOf(
     "basic_fuel_powder" to FuelType(

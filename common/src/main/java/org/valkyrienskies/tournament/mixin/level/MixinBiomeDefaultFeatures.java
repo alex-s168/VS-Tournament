@@ -13,7 +13,6 @@ import org.valkyrienskies.tournament.TournamentWorldGen;
 public class MixinBiomeDefaultFeatures {
     @Inject(at = @At("TAIL"), method = "addDefaultOres(Lnet/minecraft/world/level/biome/BiomeGenerationSettings$Builder;Z)V")
     private static void addDefaultOres(BiomeGenerationSettings.Builder builder, boolean bl, CallbackInfo ci) {
-        TournamentWorldGen.INSTANCE.register();
         TournamentEvents.INSTANCE.getWorldGenFeatures()
                 .emit(builder);
     }

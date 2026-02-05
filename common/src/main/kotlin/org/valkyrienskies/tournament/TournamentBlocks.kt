@@ -1,24 +1,14 @@
 package org.valkyrienskies.tournament
 
 import net.minecraft.core.BlockPos
-import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.core.registries.Registries
-import net.minecraft.core.Registry
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.*
-import net.minecraft.world.level.block.state.BlockBehaviour
-import net.minecraft.world.level.material.MapColor
-import net.minecraft.world.level.Explosion
-import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.*
-import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties
-import net.minecraft.world.level.material.Material
-import net.minecraft.world.level.material.MaterialColor
+import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import org.valkyrienskies.mod.common.hooks.VSGameEvents
@@ -31,8 +21,7 @@ import org.valkyrienskies.tournament.blocks.explosive.AbstractReactiveExplosiveB
 import org.valkyrienskies.tournament.blocks.explosive.SimpleExplosiveStagedBlock
 import org.valkyrienskies.tournament.registry.DeferredRegister
 import org.valkyrienskies.tournament.registry.RegistrySupplier
-import org.valkyrienskies.tournament.util.extension.with
-import org.valkyrienskies.tournament.util.getHeat
+import org.valkyrienskies.tournament.util.extension.once
 
 @Suppress("unused")
 object TournamentBlocks {
@@ -55,8 +44,8 @@ object TournamentBlocks {
     lateinit var PROP_SMALL               : RegistrySupplier<PropellerBlock>
     lateinit var CHUNK_LOADER             : RegistrySupplier<ChunkLoaderBlock>
     lateinit var CONNECTOR                : RegistrySupplier<ConnectorBlock>
-    lateinit var ORE_PHYNITE              : RegistrySupplier<OreBlock>
-    lateinit var ORE_PHYNITE_DEEPSLATE    : RegistrySupplier<OreBlock>
+    lateinit var ORE_PHYNITE              : RegistrySupplier<Block>
+    lateinit var ORE_PHYNITE_DEEPSLATE    : RegistrySupplier<Block>
 
     lateinit var EXPLOSIVE_INSTANT_SMALL  : RegistrySupplier<AbstractExplosiveBlock>
     lateinit var EXPLOSIVE_INSTANT_MEDIUM : RegistrySupplier<AbstractExplosiveBlock>
@@ -71,16 +60,15 @@ object TournamentBlocks {
     lateinit var FUEL_TANK_HALF_SOLID       : RegistrySupplier<FuelTankBlockHalf>
 
     lateinit var ROTATOR                  : RegistrySupplier<RotatorBlock>
-    lateinit var MECHANICAL_PRESS         : RegistrySupplier<MechanicalPressBlock>
     lateinit var MAGIC_CHAMBER            : RegistrySupplier<MagicChamberBlock>
 
-    fun register() {
+    val register by once {
         SHIP_ASSEMBLER           = register("ship_assembler", ::ShipAssemblerBlock)
         BALLAST                  = register("ballast", ::BallastBlock)
         POWERED_BALLOON          = register("balloon", ::PoweredBalloonBlock)
         BALLOON                  = register("balloon_unpowered", ::BalloonBlock)
         FLOATER                  = register("floater") { Block(
-            BlockBehaviour.Properties.of().mapColor(MapColor.WOOD)
+            Properties.of().mapColor(MapColor.WOOD)
                 .sound(SoundType.WOOD)
                 .strength(1.0f, 2.0f)
         )}
@@ -142,9 +130,9 @@ object TournamentBlocks {
                 val center = Vec3.atCenterOf(pos)
                 val dmgRadius = 7.0
                 level.getEntities(null, AABB.ofSize(center, dmgRadius, dmgRadius, dmgRadius)).forEach {
-                    it.hurt(DamageSource.GENERIC, 13.0f)
+                    it.hurt(level.damageSources().generic(), 13.0f)
                 }
-                level.explodeShip(center.x, center.y, center.z, 1.5f, Explosion.BlockInteraction.BREAK)
+                level.explodeShip(center.x, center.y, center.z, 1.5f, Level.ExplosionInteraction.TNT)
             }
 
             override fun shouldExplode(level: ServerLevel, pos: BlockPos): Boolean {
@@ -182,26 +170,22 @@ object TournamentBlocks {
         ROTATOR                    = register("rotator") { RotatorBlock() }
 
         ORE_PHYNITE                = register("ore_phynite") {
-            OreBlock(BlockBehaviour.Properties.of(TournamentMaterials.PHYNITE)
+            DropExperienceBlock(Properties.of().mapColor(MapColor.METAL)
                 .strength(3.0f, 3.0f)
             )
         }
 
         ORE_PHYNITE_DEEPSLATE      = register("ore_phynite_deepslate") {
-            OreBlock(BlockBehaviour.Properties.of(TournamentMaterials.PHYNITE)
+            DropExperienceBlock(Properties.of().mapColor(MapColor.METAL)
                 .strength(4.5f, 4.0f)
             )
         }
 
         register("steel_block") {
-            Block(Properties.of(Material.METAL, MaterialColor.METAL)
+            Block(Properties.of().mapColor(MapColor.METAL)
                 .requiresCorrectToolForDrops()
                 .strength(7.0F, 8.0F)
                 .sound(SoundType.METAL))
-        }
-
-        MECHANICAL_PRESS = register("mechanical_press") {
-            MechanicalPressBlock()
         }
 
         MAGIC_CHAMBER = register("magic_chamber") {

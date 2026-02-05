@@ -15,15 +15,14 @@ object TournamentMod {
 
     @JvmStatic
     fun init() {
-        TournamentNetworking.register()
-        TournamentFuelManager.registerTournamentConfigDir()
-
+        TournamentNetworking.register
         VSConfigClass.registerConfig("vs_tournament", TournamentConfig::class.java)
-        TournamentBlocks.register()
-        TournamentBlockEntities.register()
-        TournamentItems.register()
-        TournamentWeights.register()
-        TournamentTriggers.init()
+        TournamentBlocks.register
+        TournamentBlockEntities.register
+        TournamentItems.register
+        TournamentWeights.register
+        TournamentTriggers.register
+        TournamentWorldGen.register
 
         VSEvents.shipLoadEvent.on { e ->
             val ship = e.ship

@@ -2,7 +2,7 @@ package org.valkyrienskies.tournament.blocks
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.network.chat.TranslatableComponent
+import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
@@ -20,9 +20,8 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.SlabType
-import net.minecraft.world.level.material.Material
+import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.BlockHitResult
-import org.valkyrienskies.mod.common.util.toJOMLD
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.blockentity.FuelTankBlockEntity
 import org.valkyrienskies.tournament.neighborBlocks
@@ -31,8 +30,7 @@ import org.valkyrienskies.tournament.util.TitleType
 import org.valkyrienskies.tournament.util.block.SlabBaseEntityBlock
 import org.valkyrienskies.tournament.util.block.WithExRenderInfo
 import org.valkyrienskies.tournament.util.blockGroup
-import org.valkyrienskies.tournament.util.extension.toBlock
-import org.valkyrienskies.tournament.util.helper.Helper3d
+import org.valkyrienskies.tournament.util.extension.toComponent
 import org.valkyrienskies.tournament.util.sendTitle
 import java.util.BitSet
 
@@ -62,15 +60,18 @@ private fun useCommon(
         result = InteractionResult.SUCCESS
     }
 
-    be.ship { mngr ->
+    be.ship { controller ->
         level.sendTitle(
             player,
             TitleType.ACTION_BAR_TEXT,
-            TranslatableComponent(
+            TranslatableContents(
                 "misc.vs_tournament.fuel.level",
-                mngr.fuelCount,
-                mngr.fuelCap
-            )
+                "Total (ship) fuel level: %s / %s",
+                arrayOf(
+                    controller.fuelCount,
+                    controller.fuelCap,
+                )
+            ).toComponent()
         )
     }
 
@@ -94,7 +95,7 @@ private fun onCatchFire(level: Level, pos: BlockPos) {
         val fill = fillLevel.get { bp }
         if (fill > 0.1) {
             val radius = fill * 4 // at max fill radius
-            level.explode(null, x + 0.5, y + 0.5, z + 0.5, radius, true, Explosion.BlockInteraction.BREAK)
+            level.explode(null, x + 0.5, y + 0.5, z + 0.5, radius, true, Level.ExplosionInteraction.TNT)
         }
         level.setBlockAndUpdate(bp, Blocks.FIRE.defaultBlockState())
     }
@@ -110,7 +111,8 @@ class FuelTankBlockFull(
     val transparent: Boolean
 ): BaseEntityBlock(
     Properties
-        .of(Material.METAL)
+        .of()
+        .mapColor(MapColor.METAL)
         .noOcclusion()
         .isViewBlocking { _,_,_ -> !transparent }
 ), WorldlyContainerHolder, WithExRenderInfo {
@@ -235,7 +237,7 @@ class FuelTankBlockFull(
 }
 
 class FuelTankBlockHalf: SlabBaseEntityBlock(
-    Properties.of(Material.METAL)
+    Properties.of().mapColor(MapColor.METAL)
 ), WorldlyContainerHolder {
 
     override fun onProjectileHit(level: Level, state: BlockState, hit: BlockHitResult, projectile: Projectile) {

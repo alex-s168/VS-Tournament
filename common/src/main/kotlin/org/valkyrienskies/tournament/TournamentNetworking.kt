@@ -13,6 +13,7 @@ import org.valkyrienskies.core.impl.networking.simple.registerClientHandler
 import org.valkyrienskies.core.impl.networking.simple.sendToAllClients
 import org.valkyrienskies.mod.common.vsCore
 import org.valkyrienskies.tournament.ship.TournamentShips
+import org.valkyrienskies.tournament.util.extension.once
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -156,7 +157,7 @@ object TournamentNetworking {
         }
     }
 
-    fun register() {
+    val register by once {
         // TODO after vs update
         // with(vsCore.simplePacketNetworking) {
         ShipFuelTypeChange::class.register()

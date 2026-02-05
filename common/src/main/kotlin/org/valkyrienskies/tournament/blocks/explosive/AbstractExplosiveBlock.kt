@@ -2,6 +2,10 @@ package org.valkyrienskies.tournament.blocks.explosive
 
 import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.BaseEntityBlock
 import net.minecraft.world.level.block.Block
@@ -11,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.material.MapColor
+import net.minecraft.world.phys.BlockHitResult
 import org.valkyrienskies.tournament.blockentity.explosive.ExplosiveBlockEntity
 
 abstract class AbstractExplosiveBlock : BaseEntityBlock(

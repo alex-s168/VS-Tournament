@@ -1,23 +1,14 @@
 package org.valkyrienskies.tournament.util
 
 import com.mojang.brigadier.StringReader
-import net.minecraft.core.Registry
+import net.minecraft.commands.CommandBuildContext
+import net.minecraft.commands.arguments.ParticleArgument
+import net.minecraft.core.RegistryAccess
 import net.minecraft.core.particles.ParticleOptions
-import net.minecraft.core.particles.ParticleType
-import org.valkyrienskies.tournament.util.extension.resLoc
+import net.minecraft.core.registries.Registries
+import net.minecraft.world.flag.FeatureFlagSet
 
-object ParticleParser {
-    @Suppress("UNCHECKED_CAST")
-    fun parse(part: String): ParticleOptions {
-        // TODO: different in 1.20
-
-        val partLoc = part.substringBefore(' ').resLoc()
-        val partSettings = part.substringAfter(' ', missingDelimiterValue = "")
-
-        val type = Registry.PARTICLE_TYPE.get(partLoc)!!
-        val fn = type.deserializer::fromCommand as ((ParticleType<*>, StringReader) -> Any?)
-        val opt = fn(type, StringReader(partSettings)) as ParticleOptions
-
-        return opt
-    }
+fun parseParticle(access: RegistryAccess, part: String): ParticleOptions {
+    val ctx = CommandBuildContext.configurable(access, FeatureFlagSet.of())
+    return ParticleArgument.readParticle(StringReader(part), ctx.holderLookup(Registries.PARTICLE_TYPE))
 }

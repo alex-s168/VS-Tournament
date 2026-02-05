@@ -1,70 +1,94 @@
 package org.valkyrienskies.tournament
 
-import net.minecraft.core.Holder
+import net.minecraft.core.HolderGetter
+import net.minecraft.core.registries.Registries
 import net.minecraft.data.worldgen.features.FeatureUtils
-import net.minecraft.data.worldgen.features.OreFeatures
 import net.minecraft.data.worldgen.placement.PlacementUtils
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.tags.BlockTags
 import net.minecraft.world.level.levelgen.GenerationStep.Decoration
 import net.minecraft.world.level.levelgen.VerticalAnchor
-import net.minecraft.world.level.levelgen.feature.ConfiguredFeature
 import net.minecraft.world.level.levelgen.feature.Feature
 import net.minecraft.world.level.levelgen.feature.configurations.OreConfiguration
 import net.minecraft.world.level.levelgen.placement.*
-import org.valkyrienskies.tournament.util.FutureList
+import net.minecraft.world.level.levelgen.structure.templatesystem.TagMatchTest
+import org.valkyrienskies.tournament.util.extension.once
 
 object TournamentWorldGen {
+    @JvmStatic
+    val ORE_PHYNITE = ResourceKey.create(Registries.CONFIGURED_FEATURE,
+        ResourceLocation(TournamentMod.MOD_ID, "ore_phynite"))
+    @JvmStatic
+    val ORE_PHYNITE_MIDDLE = ResourceKey.create(Registries.PLACED_FEATURE,
+        ResourceLocation(TournamentMod.MOD_ID, "ore_phynite_middle"))
+    @JvmStatic
+    val ORE_PHYNITE_UPPER = ResourceKey.create(Registries.PLACED_FEATURE,
+        ResourceLocation(TournamentMod.MOD_ID, "ore_phynite_middle"))
+    @JvmStatic
+    val ORE_PHYNITE_SMALL = ResourceKey.create(Registries.PLACED_FEATURE,
+        ResourceLocation(TournamentMod.MOD_ID, "ore_phynite_small"))
+    // TODO: make above pattern nicer
 
-    lateinit var ORE_PHYNITE: Holder<ConfiguredFeature<OreConfiguration, *>>
+    val register by once {
 
-    private var registered = false
+        TournamentEvents.bootstrapOreFeatures.on { ctx ->
+            FeatureUtils.register(
+                ctx,
+                ORE_PHYNITE,
+                Feature.ORE,
+                OreConfiguration(listOf(
+                    OreConfiguration.target(
+                        TagMatchTest(BlockTags.STONE_ORE_REPLACEABLES),
+                        TournamentBlocks.ORE_PHYNITE.get().defaultBlockState()
+                    ),
+                    OreConfiguration.target(
+                        TagMatchTest(BlockTags.DEEPSLATE_ORE_REPLACEABLES),
+                        TournamentBlocks.ORE_PHYNITE_DEEPSLATE.get().defaultBlockState()
+                    )
+                ), 9)
+            )
+        }
 
-    fun register() {
-        if (registered) return
-        registered = true
+        lateinit var placedFeatures: HolderGetter<PlacedFeature>
 
-        val ORE_PHYNITE_TARGET_LIST = FutureList(listOf(
-            {OreConfiguration.target(
-                OreFeatures.STONE_ORE_REPLACEABLES, TournamentBlocks.ORE_PHYNITE.get().defaultBlockState()
-            )},
-            {OreConfiguration.target(
-                OreFeatures.DEEPSLATE_ORE_REPLACEABLES, TournamentBlocks.ORE_PHYNITE_DEEPSLATE.get().defaultBlockState()
-            )}
-        ))
+        TournamentEvents.bootstrapPlacedFeatures.on { ctx ->
+            val configuredFeatures = ctx.lookup(Registries.CONFIGURED_FEATURE)
+            val phynite = configuredFeatures.getOrThrow(ORE_PHYNITE)
 
-        ORE_PHYNITE = FeatureUtils.register(
-            "vs_tournament:ore_phynite",
-            Feature.ORE,
-            OreConfiguration(ORE_PHYNITE_TARGET_LIST, 9)
-        )
+            placedFeatures = ctx.lookup(Registries.PLACED_FEATURE)
 
-        val ores = mutableListOf<Holder<PlacedFeature>>()
-
-        ores += PlacementUtils.register(
-            "vs_tournament:ore_phynite_upper", ORE_PHYNITE, commonOrePlacement(
-                90, HeightRangePlacement.triangle(
-                    VerticalAnchor.absolute(80), VerticalAnchor.absolute(384)
+            PlacementUtils.register(
+                ctx,
+                ORE_PHYNITE_UPPER, phynite, commonOrePlacement(
+                    90, HeightRangePlacement.triangle(
+                        VerticalAnchor.absolute(80), VerticalAnchor.absolute(384)
+                    )
                 )
             )
-        )
-        ores += PlacementUtils.register(
-            "vs_tournament:ore_phynite_middle", ORE_PHYNITE, commonOrePlacement(
-                10, HeightRangePlacement.triangle(
-                    VerticalAnchor.absolute(-24), VerticalAnchor.absolute(56)
+            PlacementUtils.register(
+                ctx,
+                ORE_PHYNITE_MIDDLE, phynite, commonOrePlacement(
+                    10, HeightRangePlacement.triangle(
+                        VerticalAnchor.absolute(-24), VerticalAnchor.absolute(56)
+                    )
                 )
             )
-        )
-        ores += PlacementUtils.register(
-            "vs_tournament:ore_phynite_small", ORE_PHYNITE, commonOrePlacement(
-                10, HeightRangePlacement.uniform(
-                    VerticalAnchor.bottom(), VerticalAnchor.absolute(72)
+            PlacementUtils.register(
+                ctx,
+                ORE_PHYNITE_SMALL, phynite, commonOrePlacement(
+                    10, HeightRangePlacement.uniform(
+                        VerticalAnchor.bottom(), VerticalAnchor.absolute(72)
+                    )
                 )
             )
-        )
+        }
 
+        // TODO: do this with datapacks instead
         TournamentEvents.worldGenFeatures.on { builder ->
-            ores.forEach {
-                builder.addFeature(Decoration.UNDERGROUND_ORES, it)
-            }
+            builder.addFeature(Decoration.UNDERGROUND_ORES, placedFeatures.getOrThrow(ORE_PHYNITE_UPPER))
+            builder.addFeature(Decoration.UNDERGROUND_ORES, placedFeatures.getOrThrow(ORE_PHYNITE_MIDDLE))
+            builder.addFeature(Decoration.UNDERGROUND_ORES, placedFeatures.getOrThrow(ORE_PHYNITE_SMALL))
         }
     }
 

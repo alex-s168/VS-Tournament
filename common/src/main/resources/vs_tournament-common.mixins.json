@@ -16,6 +16,8 @@
     "advancements.MixinCriteriaTriggers",
     "level.MixinAbstractCauldronBlock",
     "level.MixinBiomeDefaultFeatures",
+    "level.MixinOreFeatures",
+    "level.MixinOrePlacements",
     "level.MixinServerLevel"
   ]
 }
