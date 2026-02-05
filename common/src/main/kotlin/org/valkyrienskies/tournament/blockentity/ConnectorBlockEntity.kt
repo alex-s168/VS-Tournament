@@ -9,15 +9,18 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import org.joml.Quaterniond
 import org.joml.Vector3d
 import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.apigame.constraints.VSAttachmentConstraint
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.core.internal.joints.VSDistanceJoint
+import org.valkyrienskies.core.internal.joints.VSJointId
+import org.valkyrienskies.core.internal.joints.VSJointPose
 import org.valkyrienskies.mod.common.*
 import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toMinecraft
-import org.valkyrienskies.physics_api.ConstraintId
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentBlocks
 import org.valkyrienskies.tournament.util.extension.toBlock
@@ -28,25 +31,48 @@ import kotlin.streams.asSequence
 class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
     BlockEntity(TournamentBlockEntities.CONNECTOR.get(), pos, state)
 {
-    var constraint: ConstraintId? = null
-    var constraintData: VSAttachmentConstraint? = null
+    data class FixedDistanceJointData(
+        val ship0: ShipId,
+        val localPos0: Vector3dc,
+        val ship1: ShipId,
+        val localPos1: Vector3dc,
+        val dist: Float,
+    ) {
+        fun toJoint() = VSDistanceJoint(
+            shipId0 = ship0,
+            pose0 = VSJointPose(localPos0, Quaterniond()),
+            shipId1 = ship1,
+            pose1 = VSJointPose(localPos1, Quaterniond()),
+            minDistance = dist,
+            maxDistance = dist,
+        )
+    }
+
+    var constraint: VSJointId? = null
+    var constraintData: FixedDistanceJointData? = null
     var otherbesec: BlockPos? = null
     var redstoneLevel = 0
     var recreate = false
 
+    @OptIn(GameTickOnly::class)
     fun tick() {
         val level = level as? ServerLevel ?: return
+        val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
 
         if (recreate) {
             if (redstoneLevel == 0) {
-                println("restoring constraint")
-                constraint = level.shipObjectWorld.createNewConstraint(constraintData!!)
+                println("[Tournament] restoring connector constraint")
                 val other = Vector3d(constraintData!!.localPos1).toBlock()
                 val otherBe = level.getBlockEntity(other) as ConnectorBlockEntity
                 assert(otherBe.constraintData == null)
                 otherBe.constraint = constraint
-                otherBe.setChanged()
-                this.setChanged()
+                gtpa.addJoint(constraintData!!.toJoint()) {
+                    // this happens delayed!
+
+                    constraint = it
+                    otherBe.setChanged()
+                    this.setChanged()
+                }
             }
             recreate = false
         }
@@ -59,7 +85,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         }
 
         if (redstoneLevel == 0) {
-            val currentShip = level.getShipObjectManagingPos(blockPos)
+            val currentShip = level.getLoadedShipManagingPos(blockPos)
             val blockPosCentered = Vec3.atCenterOf(blockPos).toJOML()
             val transform = currentShip
                 ?.transform
@@ -74,7 +100,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
                 val ranged = BlockPos.betweenClosedStream(newbb).asSequence()
                 ranged.map { it.immutable() to level.getBlockState(it) }
                     .filter { (_, state) -> state.block == TournamentBlocks.CONNECTOR.get() }
-                    .mapNotNull { (pos, _) -> level.getShipObjectManagingPos(pos)?.to(pos) }
+                    .mapNotNull { (pos, _) -> level.getLoadedShipManagingPos(pos)?.to(pos) }
                     .filter { (_, pos) -> pos != blockPos }
                     .map { (a, b) -> Triple(a, b, level.getBlockEntity(b) as ConnectorBlockEntity) }
                     .filter { (_, _, be) -> be.constraint == null && be.redstoneLevel == 0 }
@@ -86,10 +112,11 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         }
     }
 
+    @OptIn(GameTickOnly::class)
     private fun transform(pos: Vector3dc): Pair<ShipId, Vector3dc> {
         val level = level as ServerLevel
         return level
-            .getShipObjectManagingPos(pos)
+            .getLoadedShipManagingPos(pos)
             ?.let {
                 it.id to it.transform
                     .shipToWorld
@@ -100,6 +127,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
 
     private fun connect(other: BlockPos, otherBe: ConnectorBlockEntity): Boolean {
         val level = level as ServerLevel
+        val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
 
         val centerA = Vec3.atCenterOf(blockPos).toJOML()
         val centerB = Vec3.atCenterOf(other).toJOML()
@@ -107,28 +135,32 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         val (idA, posA) = transform(centerA)
         val (idB, posB) = transform(centerB)
 
-        val cfg = VSAttachmentConstraint(
-            idA,
-            idB,
-            compliance,
-            centerA,
-            centerB,
-            maxForce,
-            min(posA.distance(posB), 1.4),
+        val cfg = FixedDistanceJointData(
+            ship0 = idA,
+            localPos0 = centerA,
+            ship1 = idB,
+            localPos1 = centerB,
+            dist = (min(posA.distance(posB), 1.4)).toFloat(),
         )
         constraintData = cfg
-        constraint = level.shipObjectWorld.createNewConstraint(cfg)
         otherbesec = null
         otherBe.constraint = constraint
         otherBe.constraintData = null
         otherBe.otherbesec = blockPos
-        otherBe.setChanged()
-        this.setChanged()
+        gtpa.addJoint(cfg.toJoint()) {
+            // this happens delayed!!
+
+            constraint = it
+            otherBe.setChanged()
+            this.setChanged()
+        }
         return constraint != null
     }
 
     fun disconnect(recursed: Boolean = false) {
         val level = level as? ServerLevel ?: return
+        val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
+
         if (!recursed) {
             constraintData?.let {
                 fun doo(pos: Vector3dc) {
@@ -142,7 +174,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
             }
         }
         constraint?.let {
-            level.shipObjectWorld.removeConstraint(constraint!!)
+            gtpa.removeJoint(it)
             constraint = null
             constraintData = null
             this.setChanged()
@@ -170,8 +202,8 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         constraint?.let {
             tag.putInt("constraint", it)
             constraintData?.let {
-                tag.putLong("id0", it.shipId0)
-                tag.putLong("id1", it.shipId1)
+                tag.putLong("id0", it.ship0)
+                tag.putLong("id1", it.ship1)
 
                 tag.putDouble("lp0x", it.localPos0.x())
                 tag.putDouble("lp0y", it.localPos0.y())
@@ -181,7 +213,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
                 tag.putDouble("lp1y", it.localPos1.y())
                 tag.putDouble("lp1z", it.localPos1.z())
 
-                tag.putDouble("dist", it.fixedDistance)
+                tag.putFloat("dist", it.dist)
             }
             otherbesec?.let {
                 tag.putInt("obx", it.x)
@@ -198,22 +230,20 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
 
             if (tag.contains("id0")) {
                 recreate = constraintData == null
-                constraintData = VSAttachmentConstraint(
-                    tag.getLong("id0"),
-                    tag.getLong("id1"),
-                    compliance,
-                    Vector3d(
+                constraintData = FixedDistanceJointData(
+                    ship0 = tag.getLong("id0"),
+                    localPos0 = Vector3d(
                         tag.getDouble("lp0x"),
                         tag.getDouble("lp0y"),
                         tag.getDouble("lp0z"),
                     ),
-                    Vector3d(
+                    ship1 = tag.getLong("id1"),
+                    localPos1 = Vector3d(
                         tag.getDouble("lp1x"),
                         tag.getDouble("lp1y"),
                         tag.getDouble("lp1z"),
                     ),
-                    maxForce,
-                    tag.getDouble("dist"),
+                    tag.getFloat("dist") // this performs a cast if the tag is still stored as double (from old tournament version)
                 )
             }
 
@@ -232,7 +262,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         private const val maxForce = 1e10
 
         val ticker = BlockEntityTicker<ConnectorBlockEntity> { level, _, _, be ->
-            if(level !is ServerLevel)
+            if (level !is ServerLevel)
                 return@BlockEntityTicker
 
             assert(level == be.level)
