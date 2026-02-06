@@ -1,7 +1,7 @@
 package org.valkyrienskies.tournament
 
+import blitz.Provider
 import net.minecraft.Util
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderer
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
@@ -19,88 +19,87 @@ import org.valkyrienskies.tournament.blockentity.render.TransparentFuelTankBlock
 import org.valkyrienskies.tournament.registry.DeferredRegister
 import org.valkyrienskies.tournament.registry.RegistrySupplier
 import org.valkyrienskies.tournament.util.extension.once
+import kotlin.reflect.KProperty
 
-@Suppress("unused")
 object TournamentBlockEntities {
     private val BLOCKENTITIES = DeferredRegister.create(TournamentMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
     private val renderers = mutableListOf<RendererEntry<*>>()
 
-    lateinit var CONNECTOR: RegistrySupplier<BlockEntityType<ConnectorBlockEntity>>
-    lateinit var SENSOR: RegistrySupplier<BlockEntityType<SensorBlockEntity>>
-    lateinit var ROPE_HOOK: RegistrySupplier<BlockEntityType<RopeHookBlockEntity>>
-    lateinit var PROP_BIG: RegistrySupplier<BlockEntityType<BigPropellerBlockEntity>>
-    lateinit var PROP_SMALL: RegistrySupplier<BlockEntityType<SmallPropellerBlockEntity>>
-    lateinit var CHUNK_LOADER: RegistrySupplier<BlockEntityType<ChunkLoaderBlockEntity>>
-    lateinit var EXPLOSIVE: RegistrySupplier<BlockEntityType<ExplosiveBlockEntity>>
-    lateinit var FUEL_TANK_FULL_SOLID: RegistrySupplier<BlockEntityType<FuelTankBlockEntity>>
-    lateinit var FUEL_TANK_FULL_TRANSPARENT: RegistrySupplier<BlockEntityType<FuelTankBlockEntity>>
-    lateinit var FUEL_TANK_HALF_SOLID: RegistrySupplier<BlockEntityType<FuelTankBlockEntity>>
-    lateinit var ROTATOR: RegistrySupplier<BlockEntityType<RotatorBlockEntity>>
+    val CONNECTOR = TournamentBlocks.CONNECTOR
+        .withBE(::ConnectorBlockEntity)
+        .byName("connector")
 
-    init {
-        /* ================================================================== */
-        CONNECTOR = TournamentBlocks.CONNECTOR
-            .withBE(::ConnectorBlockEntity)
-            .byName("connector")
-        /* ================================================================== */
-        SENSOR = TournamentBlocks.SENSOR
-            .withBE(::SensorBlockEntity)
-            .byName("sensor")
-            .withRenderer {
+    val SENSOR = TournamentBlocks.SENSOR
+        .withBE(::SensorBlockEntity)
+        .byName("sensor")
+        .withRenderer(object : RenderProviderProvider<SensorBlockEntity> {
+            override fun get() = BlockEntityRendererProvider {
                 SensorBlockEntityRender()
             }
-        /* ================================================================== */
-        ROPE_HOOK = TournamentBlocks.ROPE_HOOK
-            .withBE(::RopeHookBlockEntity)
-            .byName("rope_hook")
-        /* ================================================================== */
-        PROP_BIG = TournamentBlocks.PROP_BIG
-            .withBE(::BigPropellerBlockEntity)
-            .byName("prop_big")
-            .withRenderer {
+        })
+
+    val ROPE_HOOK = TournamentBlocks.ROPE_HOOK
+        .withBE(::RopeHookBlockEntity)
+        .byName("rope_hook")
+
+    val PROP_BIG = TournamentBlocks.PROP_BIG
+        .withBE(::BigPropellerBlockEntity)
+        .byName("prop_big")
+        .withRenderer(object : RenderProviderProvider<BigPropellerBlockEntity> {
+            override fun get() = BlockEntityRendererProvider {
                 PropellerBlockEntityRender<BigPropellerBlockEntity>(
                     TournamentModels.PROP_BIG
                 )
             }
-        /* ================================================================== */
-        PROP_SMALL = TournamentBlocks.PROP_SMALL
-            .withBE(::SmallPropellerBlockEntity)
-            .byName("prop_small")
-            .withRenderer {
+        })
+
+    val PROP_SMALL = TournamentBlocks.PROP_SMALL
+        .withBE(::SmallPropellerBlockEntity)
+        .byName("prop_small")
+        .withRenderer(object : RenderProviderProvider<SmallPropellerBlockEntity> {
+            override fun get() = BlockEntityRendererProvider {
                 PropellerBlockEntityRender<SmallPropellerBlockEntity>(
                     TournamentModels.PROP_SMALL
                 )
             }
-        /* ================================================================== */
-        CHUNK_LOADER = TournamentBlocks.CHUNK_LOADER
-            .withBE(::ChunkLoaderBlockEntity)
-            .byName("chunk_loader")
-        /* ================================================================== */
-        EXPLOSIVE = TournamentBlocks.EXPLOSIVE_INSTANT_SMALL
-            .withBE(::ExplosiveBlockEntity)
-            .byName("explosive_instant_small")
-        /* ================================================================== */
-        FUEL_TANK_FULL_SOLID = TournamentBlocks.FUEL_TANK_FULL_SOLID
-            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 1.0f, FUEL_TANK_FULL_SOLID::get) }
-            .byName("fuel_tank_full_solid")
-        /* ================================================================== */
-        FUEL_TANK_FULL_TRANSPARENT = TournamentBlocks.FUEL_TANK_FULL_TRANSPARENT
-            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 1.0f, FUEL_TANK_FULL_TRANSPARENT::get) }
-            .byName("fuel_tank_full_transparent")
-            .withRenderer(::TransparentFuelTankBlockEntityRender)
-        /* ================================================================== */
-        FUEL_TANK_HALF_SOLID = TournamentBlocks.FUEL_TANK_HALF_SOLID
-            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 0.5f, FUEL_TANK_HALF_SOLID::get) }
-            .byName("fuel_tank_half_solid")
-        /* ================================================================== */
-        ROTATOR              = TournamentBlocks.ROTATOR
-            .withBE(::RotatorBlockEntity)
-            .byName("rotator")
-            .withRenderer(::RotatorBlockEntityRender)
-        /* ================================================================== */
+        })
 
+    val CHUNK_LOADER = TournamentBlocks.CHUNK_LOADER
+        .withBE(::ChunkLoaderBlockEntity)
+        .byName("chunk_loader")
+
+    val EXPLOSIVE = TournamentBlocks.EXPLOSIVE_INSTANT_SMALL
+        .withBE(::ExplosiveBlockEntity)
+        .byName("explosive_instant_small")
+
+    val FUEL_TANK_FULL_SOLID by rec { self ->
+        TournamentBlocks.FUEL_TANK_FULL_SOLID
+            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 1.0f, self) }
+            .byName("fuel_tank_full_solid")
     }
+
+    val FUEL_TANK_FULL_TRANSPARENT by rec { self ->
+        TournamentBlocks.FUEL_TANK_FULL_TRANSPARENT
+            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 1.0f, self) }
+            .byName("fuel_tank_full_transparent")
+            .withRenderer(object : RenderProviderProvider<FuelTankBlockEntity> {
+                override fun get() = BlockEntityRendererProvider { TransparentFuelTankBlockEntityRender() }
+            })
+    }
+
+    val FUEL_TANK_HALF_SOLID by rec { self ->
+        TournamentBlocks.FUEL_TANK_HALF_SOLID
+            .withBE { p, s -> FuelTankBlockEntity(p, s, capf = 0.5f, self) }
+            .byName("fuel_tank_half_solid")
+    }
+
+    val ROTATOR = TournamentBlocks.ROTATOR
+        .withBE(::RotatorBlockEntity)
+        .byName("rotator")
+        .withRenderer(object : RenderProviderProvider<RotatorBlockEntity> {
+            override fun get() = BlockEntityRendererProvider { RotatorBlockEntityRender() }
+        })
 
     val register by once {
         BLOCKENTITIES.applyAll()
@@ -110,29 +109,32 @@ object TournamentBlockEntities {
         Pair(this, blockEntity)
 
     private infix fun <T : BlockEntity> RegistrySupplier<out Block>.withBE(blockEntity: (BlockPos, BlockState) -> T) =
-        Pair(setOf(this), blockEntity)
-
-    private infix fun <T : BlockEntity> Block.withBE(blockEntity: (BlockPos, BlockState) -> T) = Pair(this, blockEntity)
+        setOf(this).withBE(blockEntity)
 
     private data class RendererEntry<T: BlockEntity>(
         val type: RegistrySupplier<BlockEntityType<T>>,
-        val renderer: () -> Any
-    )
-
-    @Suppress("UNCHECKED_CAST")
-    fun initClientRenderers(clientRenderers: TournamentMod.ClientRenderers) {
-        renderers.forEach { x ->
-            val rp = BlockEntityRendererProvider {
-                x.renderer() as BlockEntityRenderer<BlockEntity>
+        val renderer: RenderProviderProvider<T>
+    ) {
+        class ClientOnly<T: BlockEntity>(val entry: RendererEntry<T>) {
+            fun register(clientRenderers: TournamentMod.ClientRenderers) {
+                clientRenderers.registerBlockEntityRenderer(
+                    entry.type.get(),
+                    entry.renderer.get()
+                )
             }
-            clientRenderers.registerBlockEntityRenderer(
-                x.type.get() as BlockEntityType<BlockEntity>,
-                rp
-            )
+        }
+
+        fun register(clientRenderers: TournamentMod.ClientRenderers) {
+            ClientOnly(this).register(clientRenderers)
         }
     }
 
-    @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+    fun initClientRenderers(clientRenderers: TournamentMod.ClientRenderers) {
+        renderers.forEach {
+            it.register(clientRenderers)
+        }
+    }
+
     private infix fun <T : BlockEntity> Pair<Set<RegistrySupplier<out Block>>, (BlockPos, BlockState) -> T>.byName(name: String): RegistrySupplier<BlockEntityType<T>> =
         BLOCKENTITIES.register(name) {
             val type = Util.fetchChoiceType(References.BLOCK_ENTITY, name)
@@ -143,8 +145,22 @@ object TournamentBlockEntities {
             ).build(type)
         }
 
-    private infix fun <T : BlockEntity> RegistrySupplier<BlockEntityType<T>>.withRenderer(renderer: () -> Any) =
+    private infix fun <T : BlockEntity> RegistrySupplier<BlockEntityType<T>>.withRenderer(renderer: RenderProviderProvider<T>) =
         this.also {
             renderers += RendererEntry(it, renderer)
         }
+
+    class rec<T>(fn: (Provider<T>) -> RegistrySupplier<T>) {
+        val value: RegistrySupplier<T> = fn { value.get() }
+
+        operator fun getValue(thisRef: Any?, property: KProperty<*>): RegistrySupplier<T> {
+            return value
+        }
+    }
+
+    // because class loading!!!
+    interface RenderProviderProvider<T: BlockEntity> {
+        val a: Int get() = 1 // keep!!!
+        fun get(): BlockEntityRendererProvider<T>
+    }
 }

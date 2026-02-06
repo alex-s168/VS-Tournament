@@ -1,5 +1,8 @@
 package org.valkyrienskies.tournament.util
 
+import blitz.Provider
+import kotlin.reflect.KProperty
+
 data class LazyWithLateParam<T: Any, P>(
     val compute: (P) -> T,
 ) {
@@ -7,4 +10,12 @@ data class LazyWithLateParam<T: Any, P>(
 
     inline fun get(param: () -> P): T =
         value ?: compute(param()).also { value = it }
+}
+
+class rec<T>(fn: (Provider<T>) -> T) {
+    val value: T = fn(::value)
+
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        return value
+    }
 }

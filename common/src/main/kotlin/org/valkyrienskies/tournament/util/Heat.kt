@@ -5,6 +5,7 @@ import net.minecraft.world.level.block.CampfireBlock
 import net.minecraft.world.level.block.FireBlock
 import net.minecraft.world.level.block.state.BlockState
 
+// TODO: USE KELVIN
 fun BlockState.getHeat(): Int =
     when (block) {
         Blocks.ICE -> -2
