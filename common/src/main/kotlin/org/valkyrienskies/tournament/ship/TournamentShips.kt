@@ -38,7 +38,7 @@ import org.valkyrienskies.tournament.util.extension.toBlock
 import org.valkyrienskies.tournament.util.extension.toDimensionKey
 import org.valkyrienskies.tournament.util.extension.toDouble
 import org.valkyrienskies.tournament.util.extension.toResourceLocation
-import org.valkyrienskies.tournament.util.helper.Helper3d
+import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
@@ -338,19 +338,13 @@ class TournamentShips: ShipPhysicsListener {
 
         thrusters.forEach { t ->
             val water = lvl.isWaterAt(
-                Helper3d
-                    .convertShipToWorldSpace(lvl, t.pos.toDouble())
-                    .toBlock()
-            )
+                lvl.convertShipToWorldSpace(t.pos.toDouble()).toBlock())
             t.submerged = water
         }
 
         thrustersV2_2.contents().forEach { (pos, t) ->
             val water = lvl.isWaterAt(
-                Helper3d
-                    .convertShipToWorldSpace(lvl, pos.toJOMLD())
-                    .toBlock()
-            )
+                lvl.convertShipToWorldSpace(pos.toJOMLD()).toBlock())
             t.submerged = water
 
             if (!water) {
@@ -361,10 +355,7 @@ class TournamentShips: ShipPhysicsListener {
         propellers.forEach { p ->
             // TODO: check if water is on the outside if big propeller
             val water = lvl.isWaterAt(
-                Helper3d
-                    .convertShipToWorldSpace(lvl, p.pos.toDouble())
-                    .toBlock()
-            )
+                lvl.convertShipToWorldSpace(p.pos.toDouble()).toBlock())
             p.touchingWater = water
 
             val be = lvl.getBlockEntity(

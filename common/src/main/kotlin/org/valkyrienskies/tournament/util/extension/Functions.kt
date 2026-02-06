@@ -1,6 +1,5 @@
 package org.valkyrienskies.tournament.util.extension
 
-import dev.architectury.platform.Mod
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentContents
 import net.minecraft.network.chat.MutableComponent

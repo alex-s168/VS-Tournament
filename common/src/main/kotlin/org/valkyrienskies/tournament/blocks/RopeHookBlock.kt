@@ -23,19 +23,19 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
 import org.valkyrienskies.mod.api.dimensionId
 import org.valkyrienskies.mod.common.ValkyrienSkiesMod
-import org.valkyrienskies.mod.common.shipObjectWorld
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentDebugHelper
 import org.valkyrienskies.tournament.TournamentItems
 import org.valkyrienskies.tournament.util.block.DirectionalBaseEntityBlock
 import org.valkyrienskies.tournament.util.debug.DebugLine
-import org.valkyrienskies.tournament.util.helper.Helper3d
 import org.valkyrienskies.tournament.blockentity.RopeHookBlockEntity
 import org.valkyrienskies.tournament.doc.Doc
 import org.valkyrienskies.tournament.doc.Documented
 import org.valkyrienskies.tournament.doc.documentation
 import org.valkyrienskies.tournament.util.DirectionalShape
 import org.valkyrienskies.tournament.util.RotShapes
+import org.valkyrienskies.tournament.util.helper.drawQuadraticParticleCurve
+import org.valkyrienskies.tournament.util.helper.getShipRenderPosition
 import java.awt.Color
 import java.lang.Exception
 import java.util.*
@@ -63,15 +63,15 @@ class RopeHookBlock : DirectionalBaseEntityBlock(
         if (be.otherPos != null && !be.isSecondary && TournamentDebugHelper.exists(be.debugID)) {
             level as ClientLevel
             if (be.maxLen == 0.0) {
-                be.maxLen = (Helper3d.getShipRenderPosition(level, be.otherPos!!)
-                    .distance(Helper3d.getShipRenderPosition(level, be.mainPos!!)))
+                be.maxLen = (level.getShipRenderPosition(be.otherPos!!)
+                    .distance(level.getShipRenderPosition(be.mainPos!!)))
                     .absoluteValue
             }
-            val p1 = Helper3d.getShipRenderPosition(level, be.mainPos!!)
-            val p2 = Helper3d.getShipRenderPosition(level, be.otherPos!!)
+            val p1 = level.getShipRenderPosition(be.mainPos!!)
+            val p2 = level.getShipRenderPosition(be.otherPos!!)
 
             if (TournamentConfig.CLIENT.particleRopeRenderer)
-                Helper3d.drawQuadraticParticleCurve(p1, p2, be.maxLen, be.maxLen * 2, level, ParticleTypes.CLOUD)
+                drawQuadraticParticleCurve(p1, p2, be.maxLen, be.maxLen * 2, level, ParticleTypes.CLOUD)
 
             TournamentDebugHelper.list()[be.debugID] = DebugLine(p1, p2, Color.RED, !TournamentConfig.CLIENT.particleRopeRenderer)
         }

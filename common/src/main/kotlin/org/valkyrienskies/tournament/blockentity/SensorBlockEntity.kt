@@ -14,7 +14,7 @@ import org.valkyrienskies.mod.common.util.toMinecraft
 import org.valkyrienskies.mod.common.world.clipIncludeShips
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentConfig
-import org.valkyrienskies.tournament.util.helper.Helper3d
+import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 import org.valkyrienskies.tournament.util.math.lerp
 import kotlin.math.ceil
 
@@ -29,15 +29,13 @@ class SensorBlockEntity(pos: BlockPos, state: BlockState):
             .getValue(BlockStateProperties.FACING)
             .normal
 
-        val start = Helper3d.convertShipToWorldSpace(
-            level,
+        val start = level.convertShipToWorldSpace(
             Vec3.atCenterOf(blockPos)
                 .add(Vec3.atLowerCornerOf(facing)
                     .scale(0.5))
         )
 
-        val end = Helper3d.convertShipToWorldSpace(
-            level,
+        val end = level.convertShipToWorldSpace(
             Vec3.atCenterOf(blockPos)
                 .add(Vec3.atLowerCornerOf(facing)
                     .scale(TournamentConfig.SERVER.sensorDistance + 0.5))
@@ -54,8 +52,7 @@ class SensorBlockEntity(pos: BlockPos, state: BlockState):
             true
         )
 
-        val hit = Helper3d.convertShipToWorldSpace(
-            level,
+        val hit = level.convertShipToWorldSpace(
             clipResult
             .location
             .toJOML()

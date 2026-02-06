@@ -13,7 +13,7 @@ import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentDebugHelper
 import org.valkyrienskies.tournament.util.debug.DebugLine
-import org.valkyrienskies.tournament.util.helper.Helper3d
+import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 import java.awt.Color
 
 class RopeHookBlockEntity(pos: BlockPos, state: BlockState):
@@ -34,8 +34,8 @@ class RopeHookBlockEntity(pos: BlockPos, state: BlockState):
     fun setRopeID(rope: VSJointId, mainIn: Vector3d?, otherIn: Vector3d?, level: Level) {
         println("Block>> $rope")
 
-        val main = Helper3d.convertShipToWorldSpace(level, mainIn!!.add(0.5, 0.5, 0.5, Vector3d()))
-        val other = Helper3d.convertShipToWorldSpace(level, otherIn!!.add(0.5, 0.5, 0.5, Vector3d()))
+        val main = level.convertShipToWorldSpace(mainIn!!.add(0.5, 0.5, 0.5, Vector3d()))
+        val other = level.convertShipToWorldSpace(otherIn!!.add(0.5, 0.5, 0.5, Vector3d()))
 
         ropeId = rope
         otherPos = other

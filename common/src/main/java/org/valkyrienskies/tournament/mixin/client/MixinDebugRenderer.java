@@ -16,9 +16,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.valkyrienskies.tournament.TournamentDebugHelper;
 import org.valkyrienskies.tournament.util.debug.DebugLine;
-import org.valkyrienskies.tournament.util.helper.Helper3d;
 
 import java.awt.*;
+
+import static org.valkyrienskies.tournament.util.helper.Helper3dKt.getShipRenderPosition;
 
 @Mixin(DebugRenderer.class)
 public class MixinDebugRenderer {
@@ -39,8 +40,8 @@ public class MixinDebugRenderer {
 
                 if (v instanceof DebugLine line) {
                     assert mc.level != null;
-                    Vector3d A = Helper3d.INSTANCE.getShipRenderPosition(mc.level, line.getA()).sub(cam);
-                    Vector3d B = Helper3d.INSTANCE.getShipRenderPosition(mc.level, line.getB()).sub(cam);
+                    Vector3d A = getShipRenderPosition(mc.level, line.getA()).sub(cam);
+                    Vector3d B = getShipRenderPosition(mc.level, line.getB()).sub(cam);
                     Vector3d normalD = A.sub(B).normalize();
                     Vector3f normal = new Vector3f(
                             (float) normalD.x,

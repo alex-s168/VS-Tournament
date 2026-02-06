@@ -19,7 +19,7 @@ fun JsonGenerator.writeBlockPos(blockPos: BlockPos) {
     writeNumber(blockPos.asLong())
 }
 
-fun JsonNode.readBlockPos() =
+fun JsonNode.readBlockPos(): BlockPos =
     if (isArray) BlockPos(
         get(0).asInt(),
         get(1).asInt(),

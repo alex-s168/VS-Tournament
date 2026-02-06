@@ -10,12 +10,13 @@ import org.joml.Vector3f
 import org.valkyrienskies.mod.common.util.toJOMLD
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.blockentity.SensorBlockEntity
-import org.valkyrienskies.tournament.util.helper.Helper3d
+import org.valkyrienskies.tournament.util.helper.getShipRenderPosition
 import java.awt.Color
 
-class SensorBlockEntityRender:
-    BlockEntityRenderer<SensorBlockEntity> {
+// TODO: does this actually work?
 
+class SensorBlockEntityRender: BlockEntityRenderer<SensorBlockEntity>
+{
     override fun render(
         be: SensorBlockEntity,
         partial: Float,
@@ -25,6 +26,7 @@ class SensorBlockEntityRender:
         packedOverlay: Int
     ) {
         val mc = Minecraft.getInstance()
+        val level = mc.level!!
 
         if (mc.entityRenderDispatcher.shouldRenderHitBoxes()) {
             val normal = be
@@ -32,7 +34,7 @@ class SensorBlockEntityRender:
                 .getValue(BlockStateProperties.FACING)
                 .normal
 
-            val start = Helper3d.getShipRenderPosition(mc.level!!, be.blockPos.toJOMLD())
+            val start = level.getShipRenderPosition(be.blockPos.toJOMLD())
             val startBlaze3D = Vector3f(
                 start.x.toFloat(),
                 start.y.toFloat(),
@@ -40,10 +42,8 @@ class SensorBlockEntityRender:
             )
             pose.last().pose().translate(startBlaze3D)
 
-            val end = Helper3d.getShipRenderPosition(
-                mc.level!!,
-                be.blockPos.toJOMLD().add(normal.toJOMLD().mul(TournamentConfig.SERVER.sensorDistance))
-            )
+            val end = level.getShipRenderPosition(
+                be.blockPos.toJOMLD().add(normal.toJOMLD().mul(TournamentConfig.SERVER.sensorDistance)))
             val endBlaze3D = Vector3f(
                 end.x.toFloat(),
                 end.y.toFloat(),
