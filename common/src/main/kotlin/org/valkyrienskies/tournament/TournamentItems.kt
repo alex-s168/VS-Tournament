@@ -88,6 +88,22 @@ object TournamentItems {
             Item(Properties().stacksTo(64))
         }
 
+        ITEMS.register("basic_fuel_powder") {
+            Item(Properties().stacksTo(64))
+        }
+
+        ITEMS.register("basic_fuel_paste") {
+            Item(Properties().stacksTo(64))
+        }
+
+        ITEMS.register("creative_fuel_0") {
+            Item(Properties().stacksTo(64))
+        }
+
+        ITEMS.register("creative_fuel_1") {
+            Item(Properties().stacksTo(64))
+        }
+
         fuelItems.forEach { ITEMS.register(it.first) { Item(Properties().stacksTo(64)) } }
 
         // old:

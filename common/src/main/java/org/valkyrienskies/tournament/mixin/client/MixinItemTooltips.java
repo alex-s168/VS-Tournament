@@ -23,7 +23,7 @@ public class MixinItemTooltips {
             final TooltipFlag tooltipFlag,
             final CallbackInfo ci
     ) {
-        TournamentEvents.INSTANCE.getItemHoverText().emit(new TournamentEvents.ItemHoverText(
+        TournamentEvents.itemHoverText.emit(new TournamentEvents.ItemHoverText(
             itemStack,
             level,
             list,

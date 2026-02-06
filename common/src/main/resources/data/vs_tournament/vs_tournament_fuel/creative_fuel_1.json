@@ -1,0 +1,12 @@
+{
+  "item": "vs_tournament:creative_fuel_1",
+  "standbyBurnRate": 0,
+  "baseBurnRate": 0,
+  "burnRatePerThrottle": 0,
+  "basePower": 0,
+  "powerPerThrottle": 2400.0,
+  "particles": "campfire_cosy_smoke",
+  "particleCount": 2,
+  "particleSpread": 0,
+  "particleVelocity": 0.35
+}

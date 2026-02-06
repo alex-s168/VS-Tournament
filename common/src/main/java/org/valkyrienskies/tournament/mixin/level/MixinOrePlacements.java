@@ -13,7 +13,6 @@ import org.valkyrienskies.tournament.TournamentEvents;
 public class MixinOrePlacements {
     @Inject(at = @At("TAIL"), method = "bootstrap")
     private static void bootstrap(BootstapContext<PlacedFeature> context, CallbackInfo ci) {
-        TournamentEvents.INSTANCE.getBootstrapPlacedFeatures()
-                .emit(context);
+        TournamentEvents.bootstrapPlacedFeatures.emit(context);
     }
 }

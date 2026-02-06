@@ -10,6 +10,7 @@ import org.valkyrienskies.core.impl.networking.simple.SimplePacket
 import org.valkyrienskies.mod.common.vsCore
 import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.extension.once
+import org.valkyrienskies.tournament.util.extension.toResourceLocation
 
 object TournamentNetworking {
     data class ShipFuelTypeChange(
@@ -21,11 +22,7 @@ object TournamentNetworking {
             fuel: ResourceLocation?
         ): this(ship, fuel?.toString())
 
-        fun fuelKey() =
-            fuel?.let(::ResourceLocation)
-
-        fun fuelFuel() =
-            fuelKey()?.let(TournamentFuelManager.fuels::get)
+        val fuelKey get() = fuel?.toResourceLocation()
 
         fun send() {
             vsCore.simplePacketNetworking.sendToAllClients(this)
@@ -33,7 +30,7 @@ object TournamentNetworking {
 
         fun clientHandler() {
             val client = TournamentShips.Client[ship]
-            client.fuelType.set(fuelFuel())
+            client.fuelType.set(TournamentFuels.REGISTRY.get(fuelKey)!!)
         }
     }
 

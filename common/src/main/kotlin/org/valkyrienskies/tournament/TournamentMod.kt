@@ -1,6 +1,5 @@
 package org.valkyrienskies.tournament
 
-import dev.architectury.platform.Platform
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
@@ -9,12 +8,9 @@ import org.valkyrienskies.core.api.attachment.getAttachment
 import org.valkyrienskies.core.api.attachment.removeAttachment
 import org.valkyrienskies.core.api.ships.LoadedServerShip
 import org.valkyrienskies.core.api.util.GameTickOnly
-import org.valkyrienskies.core.impl.hooks.VSEvents
 import org.valkyrienskies.mod.api.vsApi
 import org.valkyrienskies.tournament.ship.*
-import org.valkyrienskies.tournament.util.extension.void
 import org.valkyrienskies.tournament.util.extension.with
-import java.io.File
 
 // TODO: remove chunkloader if can't fix
 // TODO: replace all "vs_tournament" with Tournament.MOD_ID
@@ -49,15 +45,10 @@ private fun migrateShipController(ship: LoadedServerShip) {
 object TournamentMod {
     const val MOD_ID = "vs_tournament"
 
-    @JvmField
-    var configFolder: File? = null
-
-    @OptIn(VsBeta::class)
+    @OptIn(VsBeta::class, GameTickOnly::class)
     @JvmStatic
     fun init() {
-        configFolder = Platform.getConfigFolder().toFile()
-
-        TournamentFuelManager.void()
+        TournamentFuels.register
         TournamentNetworking.register
         TournamentBlocks.register
         TournamentBlockEntities.register
@@ -73,7 +64,7 @@ object TournamentMod {
         vsApi.registerAttachment(tournamentShipControl::class.java)
         vsApi.registerAttachment(TournamentShips::class.java)
 
-        VSEvents.shipLoadEvent.on { e ->
+        vsApi.shipLoadEvent.on { e ->
             migrateShipController(e.ship)
         }
     }

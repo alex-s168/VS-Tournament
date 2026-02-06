@@ -12,6 +12,6 @@ import org.valkyrienskies.tournament.TournamentEvents;
 public class MixinMinecraft {
     @Inject(at = @At("TAIL"), method = "runTick")
     private void runTick(boolean renderLevel, CallbackInfo ci) {
-        TournamentEvents.INSTANCE.getClientTick().emit(Unit.INSTANCE);
+        TournamentEvents.clientTick.emit(Unit.INSTANCE);
     }
 }

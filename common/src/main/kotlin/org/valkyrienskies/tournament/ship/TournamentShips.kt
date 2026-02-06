@@ -37,6 +37,7 @@ import org.valkyrienskies.tournament.util.SyncBlockMap
 import org.valkyrienskies.tournament.util.extension.toBlock
 import org.valkyrienskies.tournament.util.extension.toDimensionKey
 import org.valkyrienskies.tournament.util.extension.toDouble
+import org.valkyrienskies.tournament.util.extension.toResourceLocation
 import org.valkyrienskies.tournament.util.helper.Helper3d
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -112,12 +113,12 @@ class TournamentShips: ShipPhysicsListener {
     @Volatile
     var fuelTypeKey: String? = null
 
-    var fuelType: FuelType?
-        set(v) {
-            fuelTypeKey = v?.let { TournamentFuelManager.getKey(it) }?.toString()
+    var fuelType: RegisteredFuelType?
+        set (it) {
+            fuelTypeKey = it?.id?.toString()
         }
         get() =
-            fuelTypeKey?.let { TournamentFuelManager.fuels[ResourceLocation(it)] }
+            fuelTypeKey?.toResourceLocation()?.let(TournamentFuels.REGISTRY::get)
 
     @Volatile
     var fuelCount = 0.0f
@@ -125,23 +126,22 @@ class TournamentShips: ShipPhysicsListener {
     @Volatile
     var fuelCap = 0.0f
 
-    fun useFuel(count: Float): FuelType? =
-        if (fuelCount > 0) {
-            fuelCount -= count
-            fuelType
-        } else {
+    fun useFuel(count: Float) {
+        fuelCount -= count
+        if (fuelCount < 0f) {
             fuelType = null
-            null
+            fuelCount = 0f
         }
+    }
 
     fun useFuelThrottlePreview(throttle: Float): Float =
-        fuelType?.calcPower(throttle)
+        fuelType?.fuel?.getPower(throttle)
             ?: 0.0f
 
     fun useFuelThrottle(throttle: Float, mult: Int = 1): Float =
         fuelType?.let {
-            useFuel(it.calcBurnRate(throttle) * mult)
-            it.calcPower(throttle)
+            useFuel(it.fuel.getBurnRate(throttle) * mult)
+            it.fuel.getPower(throttle)
         } ?: 0.0f
 
     data class PropellerData(
@@ -220,7 +220,7 @@ class TournamentShips: ShipPhysicsListener {
         if (fuelType != lastFuelType) {
             TournamentNetworking.ShipFuelTypeChange(
                 physShip.id,
-                TournamentFuelManager.getKey(fuelType)
+                fuelType?.id
             ).send()
             lastFuelType = fuelType
         }
@@ -229,7 +229,7 @@ class TournamentShips: ShipPhysicsListener {
             ticker = TickScheduler.everyServerTick(::tickfn)
             TournamentNetworking.ShipFuelTypeChange(
                 physShip.id,
-                TournamentFuelManager.getKey(fuelType)
+                fuelType?.id
             ).send()
         }
 
@@ -475,7 +475,7 @@ class TournamentShips: ShipPhysicsListener {
             get(ship.id)
 
         data class Data(
-            val fuelType: AtomicReference<FuelType?>,
+            val fuelType: AtomicReference<RegisteredFuelType?>,
             val thrusters: SyncBlockMap<Thruster>,
         ) {
             data class Thruster(

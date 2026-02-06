@@ -188,7 +188,7 @@ class ThrusterBlock(
 
         val rp = ship.transform.shipToWorld.transformPosition(pos.toJOMLD())
         val client = TournamentShips.Client[ship]
-        val fuel = client.fuelType.get()
+        val fuel = client.fuelType.get()?.fuel
         val thruster = client.thrusters[client.thrusters.index(pos)]
         val throttle = thruster?.throttle ?: 0.0f
 
@@ -206,9 +206,10 @@ class ThrusterBlock(
 
             fun rand() = (random.nextFloat() * 2 - 1) * fuel.particleSpread
 
+            val particleData = fuel.particles(level.registryAccess())
             repeat(fuel.particleCount) {
                 level.addParticle(
-                    fuel.particles,
+                    particleData,
                     x + rand(), y + rand(), z + rand(),
                     speedX, speedY, speedZ
                 )

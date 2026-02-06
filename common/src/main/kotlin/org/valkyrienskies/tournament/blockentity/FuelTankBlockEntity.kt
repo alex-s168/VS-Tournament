@@ -100,22 +100,13 @@ class FuelTankBlockEntity(
         }
     }
 
-    fun updateCapf(new: Float) {
-        val old = cap
-        capf = new
-        val diff = cap - old
-        ship {
-            it.fuelCap += diff
-        }
-    }
-
     fun getContainer(): CustomContainer {
         return CustomContainer(this)
     }
 
     fun canStoreCount(stack: ItemStack): Int =
         ship {
-            val fuel = stack.tournamentFuel()
+            val fuel = stack.tournamentFuel()?.fuel
             if (fuel != null && it.fuelType?.let { it == fuel } != false)
                 min(stack.count, max(it.fuelCap - it.fuelCount, 0.0f).toInt())
             else 0
@@ -123,8 +114,7 @@ class FuelTankBlockEntity(
 
     fun forceStore(stack: ItemStack, count: Int) =
         ship {
-            val fuel = stack.tournamentFuel()
-            it.fuelType = fuel
+            it.fuelType = stack.tournamentFuel()
             it.fuelCount += count
         }.void()
 

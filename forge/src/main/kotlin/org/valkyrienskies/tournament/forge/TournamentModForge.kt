@@ -7,23 +7,20 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers
 import net.minecraftforge.client.event.ModelEvent
+import net.minecraftforge.event.AddReloadListenerEvent
 import net.minecraftforge.event.TickEvent.ServerTickEvent
 import net.minecraftforge.eventbus.api.IEventBus
 import net.minecraftforge.fml.ModLoadingContext
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.valkyrienskies.tournament.TickScheduler
-import org.valkyrienskies.tournament.TournamentConfigUpdater
+import org.valkyrienskies.tournament.*
 import org.valkyrienskies.tournament.TournamentItems.TAB
-import org.valkyrienskies.tournament.TournamentMod
 import org.valkyrienskies.tournament.TournamentMod.init
 import org.valkyrienskies.tournament.TournamentMod.initClient
 import org.valkyrienskies.tournament.TournamentMod.initClientRenderers
-import org.valkyrienskies.tournament.TournamentModels
 import org.valkyrienskies.tournament.registry.CreativeTabs.create
 import thedarkcolour.kotlinforforge.forge.FORGE_BUS
 import thedarkcolour.kotlinforforge.forge.MOD_BUS
@@ -43,6 +40,12 @@ class TournamentModForge {
             TickScheduler.tickServer(event.server)
         }
 
+        FORGE_BUS.addListener { event: AddReloadListenerEvent ->
+            TournamentEvents.registerResourceManagers.emit { _, listener ->
+                event.addListener(listener)
+            }
+        }
+
         MOD_BUS.addListener { _: FMLCommonSetupEvent ->
             Registry.register(
                 BuiltInRegistries.CREATIVE_MODE_TAB,
@@ -52,9 +55,7 @@ class TournamentModForge {
         }
 
         MOD_BUS.addListener { event: FMLClientSetupEvent? ->
-            clientSetup(
-                event
-            )
+            setupClient
         }
 
         MOD_BUS.addListener { event: ModelEvent.RegisterAdditional ->
@@ -73,13 +74,7 @@ class TournamentModForge {
         init()
     }
 
-    private var didSetupClient = false
-
-    private fun clientSetup(event: FMLClientSetupEvent?) {
-        if (didSetupClient) {
-            return
-        }
-        didSetupClient = true
+    val setupClient by lazy {
         initClient()
     }
 
