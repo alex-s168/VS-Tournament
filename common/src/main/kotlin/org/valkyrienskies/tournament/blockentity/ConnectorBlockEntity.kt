@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3
 import org.joml.Quaterniond
 import org.joml.Vector3d
 import org.joml.Vector3dc
+import org.joml.primitives.AABBd
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
 import org.valkyrienskies.core.api.util.GameTickOnly
@@ -23,7 +24,8 @@ import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toMinecraft
 import org.valkyrienskies.tournament.TournamentBlockEntities
 import org.valkyrienskies.tournament.TournamentBlocks
-import org.valkyrienskies.tournament.util.extension.toBlock
+import org.valkyrienskies.tournament.util.extension.transformToNearbyShipsAndWorld
+import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.streams.asSequence
@@ -50,7 +52,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
 
     var constraint: VSJointId? = null
     var constraintData: FixedDistanceJointData? = null
-    var otherbesec: BlockPos? = null
+    var otherBePos: BlockPos? = null
     var redstoneLevel = 0
     var recreate = false
 
@@ -62,8 +64,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         if (recreate) {
             if (redstoneLevel == 0) {
                 println("[Tournament] restoring connector constraint")
-                val other = Vector3d(constraintData!!.localPos1).toBlock()
-                val otherBe = level.getBlockEntity(other) as ConnectorBlockEntity
+                val otherBe = level.getBlockEntity(otherBePos) as ConnectorBlockEntity
                 assert(otherBe.constraintData == null)
                 otherBe.constraint = constraint
                 gtpa.addJoint(constraintData!!.toJoint()) {
@@ -85,30 +86,32 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         }
 
         if (redstoneLevel == 0) {
-            val currentShip = level.getLoadedShipManagingPos(blockPos)
-            val blockPosCentered = Vec3.atCenterOf(blockPos).toJOML()
-            val transform = currentShip
-                ?.transform
-                ?.shipToWorld
-                ?.transformPosition(blockPosCentered)
-                ?: blockPosCentered
+            val thisCenterWorldPos = level.convertShipToWorldSpace(Vec3.atCenterOf(blockPos).toJOML())
 
-            val off = Vector3d(2.0)
-            val aabb = AABB(transform.sub(off).toMinecraft(), transform.add(off).toMinecraft())
-            val res = mutableListOf<Triple<ServerShip, BlockPos, ConnectorBlockEntity>>()
-            level.transformFromWorldToNearbyShipsAndWorld(aabb) { newbb ->
-                val ranged = BlockPos.betweenClosedStream(newbb).asSequence()
-                ranged.map { it.immutable() to level.getBlockState(it) }
-                    .filter { (_, state) -> state.block == TournamentBlocks.CONNECTOR.get() }
-                    .mapNotNull { (pos, _) -> level.getLoadedShipManagingPos(pos)?.to(pos) }
-                    .filter { (_, pos) -> pos != blockPos }
-                    .map { (a, b) -> Triple(a, b, level.getBlockEntity(b) as ConnectorBlockEntity) }
-                    .filter { (_, _, be) -> be.constraint == null && be.redstoneLevel == 0 }
-                    .toCollection(res)
-            }
-            res.minByOrNull { sqrt(it.second.distToCenterSqr(transform.toMinecraft())) }?.let { (_, pos, be) ->
-                connect(pos, be)
-            }
+            val maxDist = 2.5
+
+            // TODO: do much more performant. only scan nearby unconnected connectors. can store that in a per-level map or sth
+
+          //  level.transformToNearbyShipsAndWorld(thisCenterWorldPos.x, thisCenterWorldPos.y, thisCenterWorldPos.z, maxDist) { centerShipPos ->
+          //
+          //  }
+
+             val off = Vector3d(maxDist+0.2)
+             val aabb = AABB(thisCenterWorldPos.sub(off).toMinecraft(), thisCenterWorldPos.add(off).toMinecraft())
+             val res = mutableListOf<Triple<ServerShip, BlockPos, ConnectorBlockEntity>>()
+             level.transformFromWorldToNearbyShipsAndWorld(aabb) { newbb ->
+                 val ranged = BlockPos.betweenClosedStream(newbb).asSequence()
+                 ranged.map { it.immutable() to level.getBlockState(it) }
+                     .filter { (_, state) -> state.block == TournamentBlocks.CONNECTOR.get() }
+                     .mapNotNull { (pos, _) -> level.getLoadedShipManagingPos(pos)?.to(pos) }
+                     .filter { (_, pos) -> pos != blockPos }
+                     .map { (a, b) -> Triple(a, b, level.getBlockEntity(b) as ConnectorBlockEntity) }
+                     .filter { (_, _, be) -> be.constraint == null && be.redstoneLevel == 0 }
+                     .toCollection(res)
+             }
+             res.minByOrNull { sqrt(it.second.distToCenterSqr(thisCenterWorldPos.toMinecraft())) }?.let { (_, pos, be) ->
+                 connect(pos, be)
+             }
         }
     }
 
@@ -143,10 +146,10 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
             dist = (min(posA.distance(posB), 1.4)).toFloat(),
         )
         constraintData = cfg
-        otherbesec = null
+        otherBePos = blockPos
         otherBe.constraint = constraint
         otherBe.constraintData = null
-        otherBe.otherbesec = blockPos
+        otherBe.otherBePos = blockPos
         gtpa.addJoint(cfg.toJoint()) {
             // this happens delayed!!
 
@@ -157,34 +160,20 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
         return constraint != null
     }
 
-    fun disconnect(recursed: Boolean = false) {
+    fun disconnect() {
         val level = level as? ServerLevel ?: return
         val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
 
-        if (!recursed) {
-            constraintData?.let {
-                fun doo(pos: Vector3dc) {
-                    val other = pos.sub(0.5, 0.5, 0.5, Vector3d()).toBlock()
-                    val otherBe = level.getBlockEntity(other) as? ConnectorBlockEntity?
-                    if (otherBe != this)
-                        otherBe?.disconnect(true)
-                }
-                doo(constraintData!!.localPos0)
-                doo(constraintData!!.localPos1)
-            }
-        }
         constraint?.let {
             gtpa.removeJoint(it)
             constraint = null
-            constraintData = null
-            this.setChanged()
         }
-        if (!recursed) {
-            otherbesec?.let {
-                val otherBe = level.getBlockEntity(it) as? ConnectorBlockEntity?
-                if (otherBe != this)
-                    otherBe?.disconnect(true)
-            }
+        constraintData = null
+        setChanged()
+        otherBePos?.let {
+            val otherBe = level.getBlockEntity(it) as? ConnectorBlockEntity?
+            otherBePos = null
+            otherBe?.disconnect()
         }
     }
 
@@ -215,7 +204,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
 
                 tag.putFloat("dist", it.dist)
             }
-            otherbesec?.let {
+            otherBePos?.let {
                 tag.putInt("obx", it.x)
                 tag.putInt("oby", it.y)
                 tag.putInt("obz", it.z)
@@ -248,7 +237,7 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
             }
 
             if (tag.contains("obx")) {
-                otherbesec = BlockPos(
+                otherBePos = BlockPos(
                     tag.getInt("obx"),
                     tag.getInt("oby"),
                     tag.getInt("obz"),
@@ -258,9 +247,6 @@ class ConnectorBlockEntity(pos: BlockPos, state: BlockState):
     }
 
     companion object {
-        private const val compliance = 1e-20
-        private const val maxForce = 1e10
-
         val ticker = BlockEntityTicker<ConnectorBlockEntity> { level, _, _, be ->
             if (level !is ServerLevel)
                 return@BlockEntityTicker

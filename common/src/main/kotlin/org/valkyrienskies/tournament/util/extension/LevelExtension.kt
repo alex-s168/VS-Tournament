@@ -7,6 +7,7 @@ import net.minecraft.world.entity.item.PrimedTnt
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.entity.BlockEntity
 import org.joml.Vector3d
+import org.valkyrienskies.mod.common.transformToNearbyShipsAndWorld
 import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 
 fun ServerLevel.explodeShip(x : Double, y: Double, z: Double, radius: Float, interaction: Level.ExplosionInteraction) =
@@ -22,3 +23,13 @@ fun ServerLevel.explode(pos: Vector3d, radius: Float, interaction: Level.Explosi
 
 inline fun <reified T: BlockEntity> Level.getBlockEntity(pos: BlockPos): T? =
     getBlockEntity(pos) as? T
+
+inline fun Level.transformToNearbyShipsAndWorld(
+    x: Double, y: Double, z: Double, aabbRadius: Double, cb: (Vector3d) -> Unit
+) {
+    val vec = Vector3d()
+    transformToNearbyShipsAndWorld(x, y, z, aabbRadius) { x, y, z ->
+        vec.set(x, y, z)
+        cb(vec)
+    }
+}
