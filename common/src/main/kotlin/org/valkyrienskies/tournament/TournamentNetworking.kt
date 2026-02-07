@@ -1,62 +1,22 @@
 package org.valkyrienskies.tournament
 
-import blitz.collections.remove
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.resources.ResourceLocation
-import org.valkyrienskies.core.api.ships.properties.ShipId
 import org.valkyrienskies.core.impl.networking.simple.SimplePacket
 import org.valkyrienskies.mod.common.vsCore
-import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.extension.once
-import org.valkyrienskies.tournament.util.extension.toResourceLocation
 
 object TournamentNetworking {
-    data class ShipFuelTypeChange(
-        val ship: ShipId,
-        val fuel: String?,
-    ) : SimplePacket {
-        constructor(
-            ship: ShipId,
-            fuel: ResourceLocation?
-        ): this(ship, fuel?.toString())
-
-        val fuelKey get() = fuel?.toResourceLocation()
-
-        fun send() {
-            vsCore.simplePacketNetworking.sendToAllClients(this)
-        }
-
-        fun clientHandler() {
-            val client = TournamentShips.Client[ship]
-            client.fuelType.set(TournamentFuels.REGISTRY.get(fuelKey)!!)
-        }
-    }
-
-    data class ShipThrusterChange(
-        val ship: ShipId,
-        val pos: Long,
-        val throttle: Float,
+    data class FuelsReloaded(
+        val fuels: List<ClientFuelType>,
     ): SimplePacket {
-        fun unpackPos() =
-            BlockPos.of(pos)
-
-        fun removed() =
-            throttle < 0.0f
-
         fun send() {
             vsCore.simplePacketNetworking.sendToAllClients(this)
         }
 
         fun clientHandler() {
-            val client = TournamentShips.Client[ship]
-            val idx = client.thrusters.index(unpackPos())
-            if (removed()) {
-                client.thrusters.remove(idx)
-            } else {
-                client.thrusters[idx] = TournamentShips.Client.Data.Thruster(throttle)
-            }
+            TournamentClientFuels.types = fuels.toTypedArray()
         }
     }
 
@@ -74,7 +34,7 @@ object TournamentNetworking {
             val level = Minecraft.getInstance().level!!
             val man = ClientShaftMan.get(level)
             if (shaftPos in newBlocks) {
-                if (!remove) error("no.")
+                assert(remove)
                 man.eraseShaft(BlockPos.of(shaftPos))
             } else {
                 val shaft = man.shaftAt(BlockPos.of(shaftPos))!!
@@ -118,15 +78,13 @@ object TournamentNetworking {
 
     val register by once {
         with(vsCore.simplePacketNetworking) {
-            ShipFuelTypeChange::class.register()
-            ShipThrusterChange::class.register()
+            FuelsReloaded::class.register()
             ShaftSpeedChange::class.register()
             ShaftBlockChange::class.register()
         }
 
         with(vsCore.simplePacketNetworking) {
-            ShipFuelTypeChange::class.registerClientHandler(ShipFuelTypeChange::clientHandler)
-            ShipThrusterChange::class.registerClientHandler(ShipThrusterChange::clientHandler)
+            FuelsReloaded::class.registerClientHandler(FuelsReloaded::clientHandler)
             ShaftSpeedChange::class.registerClientHandler(ShaftSpeedChange::clientHandler)
             ShaftBlockChange::class.registerClientHandler(ShaftBlockChange::clientHandler)
         }

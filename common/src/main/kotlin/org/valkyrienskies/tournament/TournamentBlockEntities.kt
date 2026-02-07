@@ -30,6 +30,10 @@ object TournamentBlockEntities {
         .withBE(::ConnectorBlockEntity)
         .byName("connector")
 
+    val THRUSTER = TournamentBlocks.THRUSTER
+        .withBE(::ThrusterBlockEntity)
+        .byName("thruster")
+
     val SENSOR = TournamentBlocks.SENSOR
         .withBE(::SensorBlockEntity)
         .byName("sensor")

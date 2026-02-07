@@ -1,14 +1,10 @@
 package org.valkyrienskies.tournament.ship
 
-import blitz.Either
 import blitz.collections.remove
 import com.fasterxml.jackson.annotation.JsonAutoDetect
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.common.util.concurrent.AtomicDouble
-import net.fabricmc.api.EnvType
-import net.fabricmc.api.Environment
 import net.minecraft.core.BlockPos
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
 import org.joml.Vector3d
@@ -17,32 +13,27 @@ import org.valkyrienskies.core.api.VsBeta
 import org.valkyrienskies.core.api.attachment.getAttachment
 import org.valkyrienskies.core.api.ships.LoadedServerShip
 import org.valkyrienskies.core.api.ships.PhysShip
-import org.valkyrienskies.core.api.ships.Ship
 import org.valkyrienskies.core.api.ships.ShipPhysicsListener
-import org.valkyrienskies.core.api.ships.properties.ShipId
 import org.valkyrienskies.core.api.util.GameTickOnly
 import org.valkyrienskies.core.api.util.PhysTickOnly
 import org.valkyrienskies.core.api.world.PhysLevel
 import org.valkyrienskies.core.api.world.properties.DimensionId
-import org.valkyrienskies.core.util.pollUntilEmpty
 import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.util.toBlockPos
 import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toJOMLD
-import org.valkyrienskies.tournament.*
+import org.valkyrienskies.tournament.RegisteredFuelType
+import org.valkyrienskies.tournament.TickScheduler
+import org.valkyrienskies.tournament.TournamentConfig
+import org.valkyrienskies.tournament.TournamentFuels
 import org.valkyrienskies.tournament.blockentity.PropellerBlockEntity
 import org.valkyrienskies.tournament.util.BlockMap
 import org.valkyrienskies.tournament.util.SyncBlockMap
-import org.valkyrienskies.tournament.util.extension.toBlock
-import org.valkyrienskies.tournament.util.extension.toDimensionKey
-import org.valkyrienskies.tournament.util.extension.toDouble
-import org.valkyrienskies.tournament.util.extension.toResourceLocation
+import org.valkyrienskies.tournament.util.extension.*
 import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.atomic.AtomicReference
 
 @JsonAutoDetect(
     fieldVisibility = JsonAutoDetect.Visibility.ANY,
@@ -65,7 +56,7 @@ class TournamentShips: ShipPhysicsListener {
 
     data class ThrusterDataV2(
         val dir: Vector3d,
-        // for normal thruster between 0 and 15 * max tier
+        // for normal thruster between 0 and 1 * tier
         @Volatile
         var throttle: Float,
         @Volatile
@@ -80,13 +71,6 @@ class TournamentShips: ShipPhysicsListener {
     fun updateThrusterV2(pos: BlockPos) {
         toUpdateV2.add(pos.asLong())
     }
-
-    fun allThrusters() =
-        mutableListOf<Pair<BlockPos, Either<ThrusterData, ThrusterDataV2>>>().also { res ->
-            res += thrusters.map { it.pos.toBlockPos() to Either.ofA(it) }
-            res += thrustersV2.map { (pos, data) -> pos.toBlock() to Either.ofB(data) }
-            res += thrustersV2_2.contents().map { (pos, data) -> pos to Either.ofB(data) }
-        }
 
     private val thrusters =
         CopyOnWriteArrayList<ThrusterData>()
@@ -154,8 +138,7 @@ class TournamentShips: ShipPhysicsListener {
     private val propellers =
         CopyOnWriteArrayList<PropellerData>()
 
-    @JsonIgnore
-    private var ticker: TickScheduler.Ticking? = null
+    val ticker by lazy { TickScheduler.everyServerTick(::tickfn) }
 
     @Deprecated("kept for save file compat")
     var wasLastShutOff = false
@@ -181,34 +164,11 @@ class TournamentShips: ShipPhysicsListener {
         return thruster.force.mul(thruster.mult * TournamentConfig.SERVER.thrusterSpeed * fact)
     }
 
-    @JsonIgnore
-    private var lastFuelType = fuelType
-    @JsonIgnore
-    private val filteredUpdates = mutableSetOf<Long>() // TODO: replace with faster long set
-
     @OptIn(PhysTickOnly::class, VsBeta::class)
     override fun physTick(
         physShip: PhysShip,
         physLevel: PhysLevel
     ) {
-        toUpdateV2.pollUntilEmpty {
-            filteredUpdates.add(it)
-        }
-
-        filteredUpdates.forEach { packed ->
-            val pos = BlockPos.of(packed)
-
-            val throttle = thrusterV2(pos)
-                ?.throttle
-                ?: -1.0f // remove
-
-            TournamentNetworking.ShipThrusterChange(
-                physShip.id,
-                packed,
-                throttle
-            ).send()
-        }
-
         if (fuelCount > fuelCap)
             fuelCount = fuelCap
 
@@ -217,21 +177,7 @@ class TournamentShips: ShipPhysicsListener {
             fuelType = null
         }
 
-        if (fuelType != lastFuelType) {
-            TournamentNetworking.ShipFuelTypeChange(
-                physShip.id,
-                fuelType?.id
-            ).send()
-            lastFuelType = fuelType
-        }
-
-        if (ticker == null) {
-            ticker = TickScheduler.everyServerTick(::tickfn)
-            TournamentNetworking.ShipFuelTypeChange(
-                physShip.id,
-                fuelType?.id
-            ).send()
-        }
+        ticker.void()
 
         thrustersV2.forEach { (pos, t) ->
             thrustersV2_2[thrustersV2_2.index(pos.toBlock())] = t
@@ -448,30 +394,5 @@ class TournamentShips: ShipPhysicsListener {
             ((level.getLoadedShipManagingPos(pos)
                 ?: level.getShipManagingPos(pos))
                     as? LoadedServerShip)?.let { getOrCreate(it) }
-    }
-
-    @Environment(EnvType.CLIENT)
-    object Client {
-        private val ships = ConcurrentHashMap<ShipId, Data>()
-
-        operator fun get(ship: ShipId) =
-            ships.computeIfAbsent(ship) {
-                Data(
-                    AtomicReference(null),
-                    SyncBlockMap(BlockMap())
-                )
-            }
-
-        operator fun get(ship: Ship) =
-            get(ship.id)
-
-        data class Data(
-            val fuelType: AtomicReference<RegisteredFuelType?>,
-            val thrusters: SyncBlockMap<Thruster>,
-        ) {
-            data class Thruster(
-                val throttle: Float,
-            )
-        }
     }
 }

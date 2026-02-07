@@ -1,6 +1,7 @@
 package org.valkyrienskies.tournament.util
 
 import blitz.Provider
+import net.minecraft.resources.ResourceLocation
 import kotlin.reflect.KProperty
 
 data class LazyWithLateParam<T: Any, P>(
@@ -19,3 +20,6 @@ class rec<T>(fn: (Provider<T>) -> T) {
         return value
     }
 }
+
+@JvmInline
+value class TypedResourceLocation<T>(val location: ResourceLocation)

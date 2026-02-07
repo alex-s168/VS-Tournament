@@ -3,7 +3,7 @@
   "block.vs_tournament.balloon": "Powered Balloon",
   "block.vs_tournament.balloon_unpowered": "Balloon",
   "block.vs_tournament.spinner": "Spinner",
-  "block.vs_tournament.thruster": "Thruster",
+  "block.vs_tournament.thruster": "Solid Fuel Thruster",
   "block.vs_tournament.tiny_thruster": "Tiny Thruster",
   "block.vs_tournament.ship_assembler": "Ship Assembler",
   "block.vs_tournament.seat": "Seat",
@@ -20,9 +20,7 @@
   "block.vs_tournament.ore_phynite": "Phynite Ore",
   "block.vs_tournament.ore_phynite_deepslate": "Phynite Ore (Deepslate)",
   "block.vs_tournament.steel_block": "Steel Block",
-  "block.vs_tournament.mechanical_press": "Mechanical Press",
   "block.vs_tournament.magic_chamber": "Magic Chamber",
-  "block.vs_tournament.explosive_experimental_unstable_shrapnel": "Experimental Unstable Explosive (Shrapnel)",
 
   "block.vs_tournament.fuel_tank_half_solid": "Fuel Tank 1x0.5x1 (solid)",
   "block.vs_tournament.fuel_tank_full_solid": "Fuel Tank 1x1x1 (solid)",
@@ -32,6 +30,7 @@
   "block.vs_tournament.explosive_instant_medium": "Instant Explosive (medium)",
   "block.vs_tournament.explosive_instant_large": "Instant Explosive (large)",
   "block.vs_tournament.explosive_staged_small": "Staged Explosive (small)",
+  "block.vs_tournament.explosive_experimental_unstable_shrapnel": "Experimental Unstable Explosive (Shrapnel)",
 
   "itemGroup.vs_tournament.main_tab": "VS Tournament",
 
@@ -88,10 +87,10 @@
   "tooltip.vs_tournament.fuel.title": "Solid Fuel",
   "tooltip.vs_tournament.fuel.standbyBurnRate": "Burn rate when off: %s/t (%s/s)",
   "tooltip.vs_tournament.fuel.baseBurnRate": "Burn rate when powered: %s/t (%s/s)",
-  "tooltip.vs_tournament.fuel.burnRatePerThrottle": "Additional burn rate per throttle: %s/t (%s/s)",
-  "tooltip.vs_tournament.fuel.basePower": "Thrust: %s N",
-  "tooltip.vs_tournament.fuel.powerPerThrottle": "Additional thrust per throttle: %s N",
-  "tooltip.vs_tournament.fuel.infoThrottle": "throttle = thruster redstone level * thruster tier",
+  "tooltip.vs_tournament.fuel.maxBurnRate": "Burn rate at max throttle (Tier 1): %s/t (%s/s)",
+  "tooltip.vs_tournament.fuel.basePower": "Additional thrust when powered: %s N",
+  "tooltip.vs_tournament.fuel.maxPower": "Thrust at max throttle (Tier 1): %s N",
+  "tooltip.vs_tournament.fuel.infoThrottle": "The throttle gets multiplied by the thruster tier",
 
   "misc.vs_tournament.fuel.level": "Total (ship) fuel level: %s / %s",
 

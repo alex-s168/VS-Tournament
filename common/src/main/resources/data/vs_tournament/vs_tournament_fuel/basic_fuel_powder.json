@@ -1,12 +1,15 @@
 {
   "item": "vs_tournament:basic_fuel_powder",
+
   "standbyBurnRate": 0.000001,
   "baseBurnRate": 0.001,
-  "burnRatePerThrottle": 0.002,
+  "maxBurnRate": 0.03,
+
   "basePower": 0.33,
-  "powerPerThrottle": 1000.0,
+  "maxPower": 15000.0,
+
   "particles": "campfire_cosy_smoke",
   "particleCount": 2,
   "particleSpread": 0,
-  "particleVelocity": 0.2
+  "particleVelocity": 0.25
 }

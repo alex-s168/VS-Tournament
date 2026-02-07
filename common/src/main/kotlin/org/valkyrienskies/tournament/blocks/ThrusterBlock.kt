@@ -12,9 +12,9 @@ import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.BlockGetter
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Block
-import net.minecraft.world.level.block.DirectionalBlock
 import net.minecraft.world.level.block.RenderShape
 import net.minecraft.world.level.block.SoundType
+import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
@@ -23,32 +23,36 @@ import net.minecraft.world.level.storage.loot.LootParams
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
-import org.valkyrienskies.mod.common.getShipManagingPos
-import org.valkyrienskies.mod.common.getShipObjectManagingPos
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 import org.valkyrienskies.mod.common.util.toJOMLD
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentItems
 import org.valkyrienskies.tournament.TournamentProperties
+import org.valkyrienskies.tournament.blockentity.ThrusterBlockEntity
 import org.valkyrienskies.tournament.doc.Doc
 import org.valkyrienskies.tournament.doc.Documented
 import org.valkyrienskies.tournament.doc.documentation
 import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.DirectionalShape
 import org.valkyrienskies.tournament.util.RotShapes
+import org.valkyrienskies.tournament.util.block.DirectionalBaseEntityBlock
+
+// TODO: DOCUMENT THAT HIGHER TIER -> HIGHER BURN RATE, BUT MORE THRUST
+// TODO: RENAME TO SOLID FUEL THRUSTER
+// TODO: spinner and rotor fuel
 
 class ThrusterBlock(
     private val mult: () -> Double,
     private val maxTier: () -> Int
-) : DirectionalBlock(
+) : DirectionalBaseEntityBlock(
     Properties.of()
         .mapColor(MapColor.STONE)
         .sound(SoundType.STONE)
         .strength(1.0f, 2.0f)
 ) {
 
-    private val SHAPE = RotShapes.box(3.0, 5.0, 4.0, 13.0, 11.0, 16.0)
-
-    private val Thruster_SHAPE = DirectionalShape.south(SHAPE)
+    private val SHAPE = DirectionalShape.south(RotShapes.box(3.0, 5.0, 4.0, 13.0, 11.0, 16.0))
 
     init {
         registerDefaultState(defaultBlockState()
@@ -57,12 +61,15 @@ class ThrusterBlock(
         )
     }
 
+    override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity =
+        ThrusterBlockEntity(pos, state)
+
     override fun getRenderShape(blockState: BlockState): RenderShape {
         return RenderShape.MODEL
     }
 
     override fun getShape(state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext): VoxelShape {
-        return Thruster_SHAPE[state.getValue(BlockStateProperties.FACING)]
+        return SHAPE[state.getValue(BlockStateProperties.FACING)]
     }
 
     override fun use(
@@ -98,8 +105,8 @@ class ThrusterBlock(
 
     fun getThrottle(state: BlockState, signal: Int) =
         state.getValue(TournamentProperties.TIER) *
-            signal *
-            mult().toFloat()
+                (signal.toFloat() / 15) *
+                mult().toFloat()
 
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         super.onPlace(state, level, pos, oldState, isMoving)
@@ -179,17 +186,18 @@ class ThrusterBlock(
         return defaultBlockState()
             .setValue(BlockStateProperties.FACING, dir)
     }
-
+/*
+    @OptIn(GameTickOnly::class)
     override fun animateTick(state: BlockState, level: Level, pos: BlockPos, random: RandomSource) {
         super.animateTick(state, level, pos, random)
-        val ship = level.getShipManagingPos(pos)
-            ?: level.getShipObjectManagingPos(pos)
-            ?: return
+        if (level !is ServerLevel) return
+
+        val ship = level.getLoadedShipManagingPos(pos) ?: return
+        val controller = TournamentShips.getOrCreate(ship)
 
         val rp = ship.transform.shipToWorld.transformPosition(pos.toJOMLD())
-        val client = TournamentShips.Client[ship]
-        val fuel = client.fuelType.get()?.fuel
-        val thruster = client.thrusters[client.thrusters.index(pos)]
+        val fuel = controller.fuelType?.fuel
+        val thruster = controller.thrusterV2(pos)
         val throttle = thruster?.throttle ?: 0.0f
 
         if (fuel?.particles != null && throttle > 0.0f) {
@@ -216,7 +224,7 @@ class ThrusterBlock(
             }
         }
     }
-
+*/
     class DocImpl: Documented {
         override fun getDoc() = documentation {
             page("Thruster")

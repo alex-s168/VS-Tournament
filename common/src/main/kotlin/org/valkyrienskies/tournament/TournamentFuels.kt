@@ -7,6 +7,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.mojang.serialization.Lifecycle
 import dev.architectury.utils.GameInstance
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
 import net.minecraft.core.MappedRegistry
 import net.minecraft.core.Registry
 import net.minecraft.core.RegistryAccess
@@ -24,6 +26,7 @@ import net.minecraft.tags.TagKey
 import net.minecraft.util.profiling.ProfilerFiller
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
+import org.valkyrienskies.core.impl.shadow.pa
 import org.valkyrienskies.mod.common.hooks.VSGameEvents
 import org.valkyrienskies.tournament.util.extension.applyStyle
 import org.valkyrienskies.tournament.util.extension.toComponent
@@ -48,50 +51,56 @@ class Cached<K, V>(private val compute: (K) -> V) {
     }
 }
 
+data class FuelParticleOptions(
+    val particles: ((RegistryAccess) -> ParticleOptions)?,
+    val particleVelocity: Float,
+    val particleSpread: Float,
+    val particleCount: Int,
+)
+
 data class FuelType(
     // when off
     val standbyBurnRate: Float,
 
     // when on
     val baseBurnRate: Float,
-    val burnRatePerThrottle: Float,
+    val maxBurnRate: Float,
 
     // when on
     val basePower: Float,
-    val powerPerThrottle: Float,
+    val maxPower: Float,
 
-    val particles: ((RegistryAccess) -> ParticleOptions)?,
-    val particleVelocity: Float,
-    val particleSpread: Float,
-    val particleCount: Int,
+    val particles: FuelParticleOptions,
 ) {
     // higher score is "better"
-    val score = basePower + powerPerThrottle * 15 - baseBurnRate * 1000 - burnRatePerThrottle * 1000 * 15 - standbyBurnRate * 10000
+    val score = maxPower - baseBurnRate * 1000 - maxBurnRate * 1000 - standbyBurnRate * 10000
 
     fun getBurnRate(throttle: Float) =
         if (throttle == 0.0f)
             standbyBurnRate
         else
-            baseBurnRate + burnRatePerThrottle * throttle
+            baseBurnRate + maxBurnRate * throttle
 
     fun getPower(throttle: Float) =
-        basePower + powerPerThrottle * throttle
+        basePower + maxPower * throttle
 
     companion object {
         fun decode(json: JsonObject): FuelType =
             FuelType(
                 standbyBurnRate = json.get("standbyBurnRate")?.asFloat ?: 0f,
                 baseBurnRate = json.get("baseBurnRate")?.asFloat ?: 0f,
-                burnRatePerThrottle = json.get("burnRatePerThrottle")?.asFloat ?: 0f,
+                maxBurnRate = json.get("maxBurnRate")?.asFloat ?: 0f,
                 basePower = json.get("basePower")?.asFloat ?: 0f,
-                powerPerThrottle = json.get("powerPerThrottle")?.asFloat ?: 0f,
-                particles = json.get("particleType")?.asString?.let {
-                    if (it.isEmpty()) null
-                    else (Cached { registryAccess: RegistryAccess -> parseParticle(registryAccess, it) })::get
-                },
-                particleVelocity = json.get("particleVelocity")?.asFloat ?: 0.4f,
-                particleSpread = json.get("particleSpread")?.asFloat ?: 0f,
-                particleCount = json.get("particleCount")?.asInt ?: 2,
+                maxPower = json.get("maxPower")?.asFloat ?: 0f,
+                particles = FuelParticleOptions(
+                    particles = json.get("particleType")?.asString?.let {
+                        if (it.isEmpty()) null
+                        else (Cached { registryAccess: RegistryAccess -> parseParticle(registryAccess, it) })::get
+                    },
+                    particleVelocity = json.get("particleVelocity")?.asFloat ?: 0.4f,
+                    particleSpread = json.get("particleSpread")?.asFloat ?: 0f,
+                    particleCount = json.get("particleCount")?.asInt ?: 2,
+                )
             )
     }
 
@@ -102,7 +111,25 @@ class RegisteredFuelType(
     val fuel: FuelType,
     val targetItems: RefVec<ResourceLocation>,
     val targetTags: RefVec<ResourceLocation>,
+    var compactId: Int?,
+) {
+    fun toClient() = ClientFuelType(
+        particles = fuel.particles,
+        targetItems = targetItems.toList().toTypedArray(),
+        targetTags = targetTags.toList().toTypedArray(),
+    )
+}
+
+class ClientFuelType(
+    val particles: FuelParticleOptions,
+    val targetItems: Array<ResourceLocation>,
+    val targetTags: Array<ResourceLocation>,
 )
+
+@Environment(EnvType.CLIENT)
+object TournamentClientFuels {
+    @JvmField var types = emptyArray<ClientFuelType>()
+}
 
 object TournamentFuels {
     @JvmField
@@ -166,6 +193,7 @@ object TournamentFuels {
                             .map { it.asString.toResourceLocation() }
                             .asIterable()
                             .let(RefVec.Companion::from),
+                        compactId = null,
                     )
                     Registry.register(REGISTRY, key, fuel)
                 } catch (e: Exception) {
@@ -186,7 +214,12 @@ object TournamentFuels {
             byTag.clear()
 
             println("[Tournament] ${REGISTRY.size()} fuel types were registered")
-            REGISTRY.forEach { fuel ->
+
+            val allFuels = RefVec<ClientFuelType>(REGISTRY.size())
+            REGISTRY.forEachIndexed { compactId, fuel ->
+                fuel.compactId = compactId
+                allFuels.pushBack(fuel.toClient())
+
                 fuel.targetItems.forEach {
                     byItem.compute(it) { _, old ->
                         if (old == null || fuel.fuel.score > old.fuel.score)
@@ -203,6 +236,8 @@ object TournamentFuels {
                     }
                 }
             }
+            assert(allFuels._cap == REGISTRY.size())
+            TournamentNetworking.FuelsReloaded(allFuels.toList()).send()
         }
 
         TournamentEvents.itemHoverText.on { (stack, _, tooltipComponents, _) ->
@@ -212,7 +247,7 @@ object TournamentFuels {
                 (round(num * 1_000_000f) / 1_000_000f).toString()
 
             fun tc(key: String, vararg args: Any, styleMod: (Style) -> Style = { it }): MutableComponent =
-                TranslatableContents("tooltip.vs_tournament.fuel.$key", "$key Fuel", args)
+                TranslatableContents("tooltip.vs_tournament.fuel.$key", "", args)
                     .toComponent()
                     .applyStyle(styleMod)
 
@@ -224,24 +259,18 @@ object TournamentFuels {
                 tooltipComponents += LiteralContents("").toComponent()
             }
 
-            // TODO: merge with vs mass tooltips code (also has pounds cfg and conversion)
+            // TODO: integrate with vs mass tooltips code (also has pounds cfg and conversion)
 
             t("title") { it.withUnderlined(true) }
-
             separator()
-
             t("standbyBurnRate", num(fuel.standbyBurnRate), num(fuel.standbyBurnRate * 20))
             t("baseBurnRate", num(fuel.baseBurnRate), num(fuel.baseBurnRate * 20))
-            t("burnRatePerThrottle", num(fuel.burnRatePerThrottle), num(fuel.burnRatePerThrottle * 20)) {
-                it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, tc("infoThrottle")))
-            }
-
+            t("maxBurnRate", num(fuel.maxBurnRate), num(fuel.maxBurnRate * 20))
             separator()
-
             t("basePower", num(fuel.basePower))
-            t("powerPerThrottle", num(fuel.powerPerThrottle)) {
-                it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, tc("infoThrottle")))
-            }
+            t("maxPower", num(fuel.maxPower))
+            separator()
+            t("infoThrottle")
         }
     }
 }
