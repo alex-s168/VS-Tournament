@@ -30,10 +30,13 @@ import org.valkyrienskies.tournament.TournamentFuels
 import org.valkyrienskies.tournament.blockentity.PropellerBlockEntity
 import org.valkyrienskies.tournament.util.BlockMap
 import org.valkyrienskies.tournament.util.SyncBlockMap
+import org.valkyrienskies.tournament.util.TypedResourceLocation
 import org.valkyrienskies.tournament.util.extension.*
 import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
+import org.valkyrienskies.tournament.util.typed
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.min
 
 @JsonAutoDetect(
     fieldVisibility = JsonAutoDetect.Visibility.ANY,
@@ -41,11 +44,12 @@ import java.util.concurrent.CopyOnWriteArrayList
     isGetterVisibility = JsonAutoDetect.Visibility.NONE,
     setterVisibility = JsonAutoDetect.Visibility.NONE
 )
-class TournamentShips: ShipPhysicsListener {
-
+class TournamentShips: ShipPhysicsListener
+{
     var level: DimensionId = "minecraft:overworld"
         private set
 
+    @Deprecated("kept for save file compat")
     data class ThrusterData(
         val pos: Vector3i,
         val force: Vector3d,
@@ -58,23 +62,14 @@ class TournamentShips: ShipPhysicsListener {
         val dir: Vector3d,
         // for normal thruster between 0 and 1 * tier
         @Volatile
-        var throttle: Float,
-        @Volatile
-        var submerged: Boolean = false,
-        @Volatile
-        var lastPower: Float = 0.0f,
+        var throttle: Float
     )
 
-    @JsonIgnore
-    private val toUpdateV2 = ConcurrentLinkedQueue<Long>()
-
-    fun updateThrusterV2(pos: BlockPos) {
-        toUpdateV2.add(pos.asLong())
-    }
-
+    @Deprecated("kept for save file compat")
     private val thrusters =
         CopyOnWriteArrayList<ThrusterData>()
 
+    @Deprecated("kept for save file compat")
     private val thrustersV2 =
         CopyOnWriteArrayList<Pair<Vector3d, ThrusterDataV2>>()
 
@@ -102,7 +97,9 @@ class TournamentShips: ShipPhysicsListener {
             fuelTypeKey = it?.id?.toString()
         }
         get() =
-            fuelTypeKey?.toResourceLocation()?.let(TournamentFuels.REGISTRY::get)
+            fuelTypeKey?.toResourceLocation()
+                ?.typed<RegisteredFuelType>()
+                ?.let(TournamentFuels::get)
 
     @Volatile
     var fuelCount = 0.0f
@@ -110,23 +107,17 @@ class TournamentShips: ShipPhysicsListener {
     @Volatile
     var fuelCap = 0.0f
 
-    fun useFuel(count: Float) {
-        fuelCount -= count
+    /** returns 0-1 depending on how much of the wanted fuel was provider */
+    fun useFuel(wanted: Float): Float {
+        if (wanted == 0f) return 0f
+        val throttle = min(1f, fuelCount / wanted)
+        fuelCount -= wanted
         if (fuelCount < 0f) {
             fuelType = null
             fuelCount = 0f
         }
+        return throttle
     }
-
-    fun useFuelThrottlePreview(throttle: Float): Float =
-        fuelType?.fuel?.getPower(throttle)
-            ?: 0.0f
-
-    fun useFuelThrottle(throttle: Float, mult: Int = 1): Float =
-        fuelType?.let {
-            useFuel(it.fuel.getBurnRate(throttle) * mult)
-            it.fuel.getPower(throttle)
-        } ?: 0.0f
 
     data class PropellerData(
         val pos: Vector3i,
@@ -143,25 +134,17 @@ class TournamentShips: ShipPhysicsListener {
     @Deprecated("kept for save file compat")
     var wasLastShutOff = false
 
+    // TODO: why unused?
     fun dryForce(thruster: ThrusterDataV2): Vector3d {
         // actual fuel is used at game tick
-        val force = useFuelThrottlePreview(thruster.throttle)
+        val force = fuelType?.fuel?.getPower(thruster.throttle) ?: 0.0f
 
         var fact = 1.0
-        if (!force.isFinite() || thruster.submerged) {
+        if (!force.isFinite()) {
             fact = 0.0
         }
 
         return thruster.dir.mul(force.toDouble()).mul(fact)
-    }
-
-    fun dryForce(thruster: ThrusterData): Vector3d {
-        var fact = 1.0
-        if (thruster.submerged) {
-            fact = 0.0
-        }
-
-        return thruster.force.mul(thruster.mult * TournamentConfig.SERVER.thrusterSpeed * fact)
     }
 
     @OptIn(PhysTickOnly::class, VsBeta::class)
@@ -185,20 +168,16 @@ class TournamentShips: ShipPhysicsListener {
         thrustersV2.clear()
 
         thrustersV2_2.contents().forEach { (pos, t) ->
-            if (t.submerged) {
-                t.lastPower = 0.0f
+            if (t.throttle == 0f) {
                 return@forEach
             }
 
             // actual fuel is used at game tick
-            val force = useFuelThrottlePreview(t.throttle)
+            val force = fuelType?.fuel?.getPower(t.throttle) ?: 0.0f
 
             if (force == 0.0f || !force.isFinite()) {
-                t.lastPower = 0.0f
                 return@forEach
             }
-
-            t.lastPower = force
 
             val tForce = physShip.transform.shipToWorld.transformDirection(t.dir, Vector3d())
             tForce.mul(force.toDouble())
@@ -206,7 +185,7 @@ class TournamentShips: ShipPhysicsListener {
                 .add(0.5, 0.5, 0.5, Vector3d())
                 .sub(physShip.transform.positionInShip)
 
-            physShip.applyInvariantForceToPos(tForce, tPos)
+            physShip.applyWorldForce(tForce, tPos)
         }
 
         thrusters.forEach { data ->
@@ -279,32 +258,23 @@ class TournamentShips: ShipPhysicsListener {
         }
     }
 
+    // TODO: move this into the block entities
     private fun tickfn(server: MinecraftServer) {
-        val lvl = server.getLevel(level.toDimensionKey()) ?: return
+        val level = server.getLevel(this@TournamentShips.level.toDimensionKey()) ?: return
 
         thrusters.forEach { t ->
-            val water = lvl.isWaterAt(
-                lvl.convertShipToWorldSpace(t.pos.toDouble()).toBlock())
+            val water = level.isWaterAt(
+                level.convertShipToWorldSpace(t.pos.toDouble()).toBlock())
             t.submerged = water
-        }
-
-        thrustersV2_2.contents().forEach { (pos, t) ->
-            val water = lvl.isWaterAt(
-                lvl.convertShipToWorldSpace(pos.toJOMLD()).toBlock())
-            t.submerged = water
-
-            if (!water) {
-                useFuelThrottle(t.throttle)
-            }
         }
 
         propellers.forEach { p ->
             // TODO: check if water is on the outside if big propeller
-            val water = lvl.isWaterAt(
-                lvl.convertShipToWorldSpace(p.pos.toDouble()).toBlock())
+            val water = level.isWaterAt(
+                level.convertShipToWorldSpace(p.pos.toDouble()).toBlock())
             p.touchingWater = water
 
-            val be = lvl.getBlockEntity(
+            val be = level.getBlockEntity(
                 p.pos.toBlockPos()
             ) as PropellerBlockEntity<*>?
 

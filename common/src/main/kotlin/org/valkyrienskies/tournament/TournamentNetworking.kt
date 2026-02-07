@@ -11,10 +11,6 @@ object TournamentNetworking {
     data class FuelsReloaded(
         val fuels: List<ClientFuelType>,
     ): SimplePacket {
-        fun send() {
-            vsCore.simplePacketNetworking.sendToAllClients(this)
-        }
-
         fun clientHandler() {
             TournamentClientFuels.types = fuels.toTypedArray()
         }

@@ -23,3 +23,7 @@ class rec<T>(fn: (Provider<T>) -> T) {
 
 @JvmInline
 value class TypedResourceLocation<T>(val location: ResourceLocation)
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> ResourceLocation.typed(): TypedResourceLocation<T> =
+    TypedResourceLocation(this)

@@ -9,7 +9,7 @@ object ShipAssembler {
 
     fun findStructure(level: ServerLevel, pos: BlockPos) : DenseBlockPosSet {
         val set = level.blockGroup(pos, shouldCancel = { it > 2000 }) {
-            !it.isAir && !it.`is`(TournamentTags.ASSEMBLER_BLACKLIST)
+            !it.isAir && !it.`is`(TournamentTags.ASSEMBLER_BLACKLIST) && !it.liquid()
         }
 
         return set.toVsSlow()

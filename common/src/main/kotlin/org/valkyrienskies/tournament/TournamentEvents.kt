@@ -1,9 +1,18 @@
 package org.valkyrienskies.tournament
 
+import com.google.gson.Gson
+import com.google.gson.JsonElement
+import net.minecraft.core.RegistryAccess
 import net.minecraft.data.worldgen.BootstapContext
+import net.minecraft.network.Connection
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.packs.resources.PreparableReloadListener
+import net.minecraft.server.packs.resources.ResourceManager
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener
+import net.minecraft.util.profiling.ProfilerFiller
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.TooltipFlag
 import net.minecraft.world.level.Level
@@ -14,6 +23,7 @@ import org.valkyrienskies.core.api.event.EventConsumer
 import org.valkyrienskies.core.api.event.RegisteredListener
 import org.valkyrienskies.core.api.event.SingleEvent
 import org.valkyrienskies.core.util.events.EventEmitterImpl
+import org.valkyrienskies.tournament.TournamentEvents.ResourceListenerRegistrar
 
 // kotlin <-> jvm interop moment
 class EventWrapper<T>(private val impl: SingleEvent<T>) : SingleEvent<T> {
@@ -30,11 +40,20 @@ object TournamentEvents {
     @JvmField val worldGenFeatures = EventWrapper(EventEmitterImpl<BiomeGenerationSettings.Builder>())
     @JvmField val bootstrapPlacedFeatures = EventWrapper(EventEmitterImpl<BootstapContext<PlacedFeature>>())
     @JvmField val bootstrapOreFeatures = EventWrapper(EventEmitterImpl<BootstapContext<ConfiguredFeature<*, *>>>())
-    @JvmField val registerResourceManagers = EventWrapper(EventEmitterImpl<ResourceListenerRegistrar>())
+    @JvmField val registerResourceListeners = EventWrapper(EventEmitterImpl<ResourceListenerRegistrar>())
+    @JvmField val postPlayerJoin = EventWrapper(EventEmitterImpl<PlayerJoin>())
+    @JvmField val postCreateDimensions = EventWrapper(EventEmitterImpl<MinecraftServer>())
+    @JvmField val registriesCompleted = postCreateDimensions
 
-    fun interface ResourceListenerRegistrar {
+    interface ResourceListenerRegistrar {
+        val registryAccess: RegistryAccess
         fun registerListener(id: ResourceLocation, listener: PreparableReloadListener)
     }
+
+    data class PlayerJoin(
+        val connection: Connection,
+        val player: Player,
+    )
 
     data class ItemHoverText(
         val stack: ItemStack,
@@ -42,4 +61,29 @@ object TournamentEvents {
         val tooltipComponents: MutableList<Component>,
         val isAdvanced: TooltipFlag
     )
+}
+
+fun interface MinimalJsonResourceListener {
+    fun apply(
+        objects: Map<ResourceLocation, JsonElement>,
+        resourceManager: ResourceManager,
+        profiler: ProfilerFiller?
+    )
+}
+
+fun ResourceListenerRegistrar.registerListener(
+    id: ResourceLocation,
+    directory: String,
+    gson: Gson = Gson(),
+    listener: MinimalJsonResourceListener
+) {
+    registerListener(id, object : SimpleJsonResourceReloadListener(gson, directory) {
+        override fun apply(
+            map: Map<ResourceLocation, JsonElement>,
+            resourceManager: ResourceManager,
+            profiler: ProfilerFiller?
+        ) {
+            listener.apply(map, resourceManager, profiler)
+        }
+    })
 }

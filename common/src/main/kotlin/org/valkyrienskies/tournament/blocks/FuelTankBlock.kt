@@ -34,6 +34,8 @@ import org.valkyrienskies.tournament.util.extension.toComponent
 import org.valkyrienskies.tournament.util.sendTitle
 import java.util.BitSet
 
+// TODO: accessors for data from lua
+
 private fun useCommon(
     state: BlockState,
     level: Level,

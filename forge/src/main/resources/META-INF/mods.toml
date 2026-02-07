@@ -6,7 +6,7 @@ license = "Apache-2.0"
 [[mods]]
 modId = "vs_tournament"
 version = "${version}"
-displayName = "VS Tournament Mod"
+displayName = "Valkyrien Skies: Tournament"
 authors = [
     "alex_s168",
     "ConstantDust",

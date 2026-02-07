@@ -17,6 +17,9 @@
     "level.MixinBiomeDefaultFeatures",
     "level.MixinOreFeatures",
     "level.MixinOrePlacements",
-    "level.MixinServerLevel"
+    "level.MixinServerLevel",
+    "server.MixinMinecraftServer",
+    "server.MixinPlayerList",
+    "server.MixinReloadableServerResources"
   ]
 }

@@ -9,26 +9,15 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.jetbrains.annotations.NotNull;
-import org.valkyrienskies.core.api.event.EmittableEvent;
 import org.valkyrienskies.tournament.*;
 import org.valkyrienskies.mod.fabric.common.ValkyrienSkiesModFabric;
 import org.valkyrienskies.tournament.registry.CreativeTabs;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 // TODO: port this to kotlin
 
@@ -58,26 +47,6 @@ public class TournamentModFabric implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(TickScheduler.INSTANCE::tickServer);
 
         TournamentMod.init();
-
-        TournamentEvents.registerResourceManagers.emit(new ResourceListenerRegistrar());
-    }
-
-    private static class ResourceListenerRegistrar implements TournamentEvents.ResourceListenerRegistrar {
-        @Override
-        public void registerListener(@NotNull ResourceLocation id, @NotNull PreparableReloadListener listener) {
-            ResourceManagerHelper.get(PackType.SERVER_DATA)
-                    .registerReloadListener(new IdentifiableResourceReloadListener() {
-                        @Override
-                        public ResourceLocation getFabricId() {
-                            return id;
-                        }
-
-                        @Override
-                        public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
-                            return listener.reload(preparationBarrier, resourceManager, preparationsProfiler, reloadProfiler, backgroundExecutor, gameExecutor);
-                        }
-                    });
-        }
     }
 
     @Environment(EnvType.CLIENT)

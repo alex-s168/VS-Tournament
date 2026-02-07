@@ -1,5 +1,7 @@
 package org.valkyrienskies.tournament.blocks
 
+import blitz.Provider
+import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
@@ -15,6 +17,8 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.RenderShape
 import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.entity.BlockEntityTicker
+import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
@@ -25,7 +29,9 @@ import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
 import org.valkyrienskies.core.api.util.GameTickOnly
 import org.valkyrienskies.mod.common.getLoadedShipManagingPos
+import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toJOMLD
+import org.valkyrienskies.tournament.TournamentClientFuels
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentItems
 import org.valkyrienskies.tournament.TournamentProperties
@@ -37,14 +43,15 @@ import org.valkyrienskies.tournament.ship.TournamentShips
 import org.valkyrienskies.tournament.util.DirectionalShape
 import org.valkyrienskies.tournament.util.RotShapes
 import org.valkyrienskies.tournament.util.block.DirectionalBaseEntityBlock
+import org.valkyrienskies.tournament.util.extension.getBlockEntity
 
 // TODO: DOCUMENT THAT HIGHER TIER -> HIGHER BURN RATE, BUT MORE THRUST
 // TODO: RENAME TO SOLID FUEL THRUSTER
 // TODO: spinner and rotor fuel
 
 class ThrusterBlock(
-    private val mult: () -> Double,
-    private val maxTier: () -> Int
+    private val mult: Provider<Float>,
+    private val maxTier: Provider<Int>
 ) : DirectionalBaseEntityBlock(
     Properties.of()
         .mapColor(MapColor.STONE)
@@ -62,7 +69,15 @@ class ThrusterBlock(
     }
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity =
-        ThrusterBlockEntity(pos, state)
+        ThrusterBlockEntity(pos, state, mult)
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : BlockEntity?> getTicker(
+        level: Level?,
+        state: BlockState?,
+        blockEntityType: BlockEntityType<T?>?
+    ): BlockEntityTicker<T> =
+        ThrusterBlockEntity.ticker as BlockEntityTicker<T>
 
     override fun getRenderShape(blockState: BlockState): RenderShape {
         return RenderShape.MODEL
@@ -103,17 +118,9 @@ class ThrusterBlock(
         super.createBlockStateDefinition(builder)
     }
 
-    fun getThrottle(state: BlockState, signal: Int) =
-        state.getValue(TournamentProperties.TIER) *
-                (signal.toFloat() / 15) *
-                mult().toFloat()
-
     override fun onPlace(state: BlockState, level: Level, pos: BlockPos, oldState: BlockState, isMoving: Boolean) {
         super.onPlace(state, level, pos, oldState, isMoving)
-
         if (level !is ServerLevel) return
-
-        val signal = level.getBestNeighborSignal(pos)
 
         val ships = TournamentShips.get(level, pos)
 
@@ -121,12 +128,9 @@ class ThrusterBlock(
             pos,
             TournamentShips.ThrusterDataV2(
                 state.getValue(FACING).normal.toJOMLD(),
-                getThrottle(state, signal),
-                false,
+                0f,
             )
         )
-
-        ships?.updateThrusterV2(pos)
     }
 
     override fun onRemove(state: BlockState, level: Level, pos: BlockPos, newState: BlockState, isMoving: Boolean) {
@@ -135,7 +139,6 @@ class ThrusterBlock(
         val ships = TournamentShips.get(level, pos)
 
         ships?.removeThrusterV2(pos)
-        ships?.updateThrusterV2(pos)
 
         super.onRemove(state, level, pos, newState, isMoving)
     }
@@ -151,32 +154,6 @@ class ThrusterBlock(
         return drops
     }
 
-    override fun neighborChanged(
-        state: BlockState,
-        level: Level,
-        pos: BlockPos,
-        block: Block,
-        fromPos: BlockPos,
-        isMoving: Boolean
-    ) {
-        super.neighborChanged(state, level, pos, block, fromPos, isMoving)
-
-        if (level !is ServerLevel) return
-
-        val signal = level.getBestNeighborSignal(pos)
-
-        val ships = TournamentShips.get(level, pos)
-
-        ships?.thrusterV2(pos)?.let {
-            val new = getThrottle(state, signal)
-
-            if (it.throttle != new) {
-                it.throttle = new
-                ships.updateThrusterV2(pos)
-            }
-        }
-    }
-
     override fun getStateForPlacement(ctx: BlockPlaceContext): BlockState {
         var dir = ctx.nearestLookingDirection
 
@@ -186,36 +163,36 @@ class ThrusterBlock(
         return defaultBlockState()
             .setValue(BlockStateProperties.FACING, dir)
     }
-/*
+
     @OptIn(GameTickOnly::class)
     override fun animateTick(state: BlockState, level: Level, pos: BlockPos, random: RandomSource) {
         super.animateTick(state, level, pos, random)
-        if (level !is ServerLevel) return
+        if (level !is ClientLevel) return
+        val be = level.getBlockEntity<ThrusterBlockEntity>(pos) ?: return
 
         val ship = level.getLoadedShipManagingPos(pos) ?: return
-        val controller = TournamentShips.getOrCreate(ship)
 
-        val rp = ship.transform.shipToWorld.transformPosition(pos.toJOMLD())
-        val fuel = controller.fuelType?.fuel
-        val thruster = controller.thrusterV2(pos)
-        val throttle = thruster?.throttle ?: 0.0f
+        val rp = ship.transform.shipToWorld.transformPosition(pos.center.toJOML())
+        val fuel = be.fuelTypeCompactId?.let(TournamentClientFuels.types::getOrNull) ?: return
+        val throttle = be.actualThrottle
 
-        if (fuel?.particles != null && throttle > 0.0f) {
-            val dir = state.getValue(FACING)
+        if (fuel.particles.particles != null && throttle > 0.0f) {
+            val facing = state.getValue(FACING).normal.toJOMLD()
+            val dir = ship.transform.rotation.transform(facing)
 
-            val vel = fuel.particleVelocity.toDouble()
+            val vel = fuel.particles.particleVelocity.toDouble()
 
-            val x = rp.x + (0.5 * (dir.stepX + 1))
-            val y = rp.y + (0.5 * (dir.stepY + 1))
-            val z = rp.z + (0.5 * (dir.stepZ + 1))
-            val speedX = dir.stepX * -vel
-            val speedY = dir.stepY * -vel
-            val speedZ = dir.stepZ * -vel
+            val x = rp.x - (0.5 * dir.x)
+            val y = rp.y - (0.5 * dir.y)
+            val z = rp.z - (0.5 * dir.z)
+            val speedX = dir.x * -vel
+            val speedY = dir.y * -vel
+            val speedZ = dir.z * -vel
 
-            fun rand() = (random.nextFloat() * 2 - 1) * fuel.particleSpread
+            fun rand() = (random.nextFloat() * 2 - 1) * fuel.particles.particleSpread
 
-            val particleData = fuel.particles(level.registryAccess())
-            repeat(fuel.particleCount) {
+            val particleData = fuel.particles.particles
+            repeat(fuel.particles.particleCount) {
                 level.addParticle(
                     particleData,
                     x + rand(), y + rand(), z + rand(),
@@ -224,7 +201,7 @@ class ThrusterBlock(
             }
         }
     }
-*/
+
     class DocImpl: Documented {
         override fun getDoc() = documentation {
             page("Thruster")

@@ -9,6 +9,8 @@ import net.minecraft.core.BlockPos
 import net.minecraft.world.level.ChunkPos
 import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet
 
+// TODO: get rid of this and replace with VS?
+
 class DenseBlockBoolSet {
     val backing = mutableMapOf<ChunkPos, DenseIx16x16BoolMap>()
 

@@ -8,7 +8,7 @@
   "basePower": 0.33,
   "maxPower": 15000.0,
 
-  "particles": "campfire_cosy_smoke",
+  "particleType": "campfire_cosy_smoke",
   "particleCount": 2,
   "particleSpread": 0,
   "particleVelocity": 0.25

@@ -22,7 +22,7 @@ class ChunkLoaderBlockEntity(pos: BlockPos, state: BlockState):
 
     internal var ticket: ChunkLoadingTicket? = null
 
-    fun tick(level: ServerLevel) {
+    private fun tick(level: ServerLevel) {
         if (ticket == null) {
             val manager = ChunkLoaderManager.getFor(level)
             ticket = manager.allocate(this, 200)
