@@ -59,8 +59,9 @@ class TournamentShips: ShipPhysicsListener
     )
 
     data class ThrusterDataV2(
+        /** facing normal */
         val dir: Vector3d,
-        // for normal thruster between 0 and 1 * tier
+        /** for normal thruster between 0 and 1 * tier */
         @Volatile
         var throttle: Float
     )
@@ -133,19 +134,6 @@ class TournamentShips: ShipPhysicsListener
 
     @Deprecated("kept for save file compat")
     var wasLastShutOff = false
-
-    // TODO: why unused?
-    fun dryForce(thruster: ThrusterDataV2): Vector3d {
-        // actual fuel is used at game tick
-        val force = fuelType?.fuel?.getPower(thruster.throttle) ?: 0.0f
-
-        var fact = 1.0
-        if (!force.isFinite()) {
-            fact = 0.0
-        }
-
-        return thruster.dir.mul(force.toDouble()).mul(fact)
-    }
 
     @OptIn(PhysTickOnly::class, VsBeta::class)
     override fun physTick(

@@ -7,26 +7,9 @@ import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.resources.model.BakedModel
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.level.block.entity.BlockEntity
-import org.valkyrienskies.tournament.services.TournamentPlatformHelper
-import org.valkyrienskies.tournament.util.rend.DefinitelyNotCopiedFromCreateSuperRenderTypeBuffer
 
 object TournamentModels {
-
-    private fun getModel(rl: ResourceLocation): BakedModel {
-        val model = TournamentPlatformHelper
-            .get()
-            .loadBakedModel(rl)
-
-        if (model == null) {
-            // TODO: proper logging
-            println("[Tournament] Failed to load model $rl")
-            return Minecraft.getInstance().modelManager.missingModel
-        }
-
-        return model
-    }
-
-    val MODELS = mutableSetOf<ResourceLocation>()
+    @JvmField val MODELS = mutableMapOf<ResourceLocation, Model>()
 
     interface Renderer {
         fun render(
@@ -39,33 +22,11 @@ object TournamentModels {
     }
 
     data class Model(
-        val resourceLocation: ResourceLocation,
-        val checkSides: Boolean = true,
-        val useAO: Boolean = false,
+        @JvmField val resourceLocation: ResourceLocation,
+        @JvmField val checkSides: Boolean = true,
+        @JvmField val useAO: Boolean = false,
     ) {
-        val bakedModel: BakedModel by lazy {
-            getModel(resourceLocation)
-        }
-
-        fun renderNow(matrixStack: PoseStack, blockEntity: BlockEntity, packedOverlay: Int) {
-            val level = blockEntity.level ?: return
-            val modRend = Minecraft.getInstance().blockRenderer.modelRenderer
-
-            val buf = DefinitelyNotCopiedFromCreateSuperRenderTypeBuffer.getInstance()
-            modRend.tesselateWithAO(
-                level,
-                bakedModel,
-                blockEntity.blockState,
-                blockEntity.blockPos,
-                matrixStack,
-                buf.getBuffer(RenderType.cutout()),
-                checkSides,
-                level.random,
-                42L, // Used in ModelBlockRenderer.class in renderModel, not sure what the right number is but this seems to work
-                packedOverlay
-            )
-            buf.draw()
-        }
+        @JvmField var bakedModel: BakedModel? = null
 
         val renderer = object : Renderer {
             override fun render(
@@ -77,11 +38,11 @@ object TournamentModels {
             ) {
                 val level = blockEntity.level ?: return
 
-                val modRend = Minecraft.getInstance().blockRenderer.modelRenderer
-                val fn = if (useAO) modRend::tesselateWithAO else modRend::tesselateWithoutAO
+                val modelBlockRenderer = Minecraft.getInstance().blockRenderer.modelRenderer
+                val fn = if (useAO) modelBlockRenderer::tesselateWithAO else modelBlockRenderer::tesselateWithoutAO
                 fn(
                     level,
-                    bakedModel,
+                    bakedModel!!,
                     blockEntity.blockState,
                     blockEntity.blockPos,
                     matrixStack,
@@ -97,19 +58,41 @@ object TournamentModels {
 
     private fun model(name: String, checkSides: Boolean = true, useAO: Boolean = false): Model {
         val rl = ResourceLocation(TournamentMod.MOD_ID, name)
-
-        MODELS += rl
-
-        return Model(rl, checkSides, useAO)
+        if (rl in MODELS)
+            error("Model $name already registered !")
+        val model = Model(rl, checkSides, useAO)
+        MODELS[rl] = model
+        return model
     }
 
-    val PROP_BIG = model("block/prop_big_prop")
-    val PROP_SMALL = model("block/prop_small_prop")
-    val SOLID_FUEL = model("block/solid_fuel")
-    val ROTATOR_ROTARY = model("block/rotator_rotary")
-    val FUEL_TANK_FULL_TRANSPARENT = model(
+    @JvmField val PROP_BIG = model("block/prop_big_prop")
+    @JvmField val PROP_SMALL = model("block/prop_small_prop")
+    @JvmField val SOLID_FUEL = model("block/solid_fuel")
+    @JvmField val ROTATOR_ROTARY = model("block/rotator_rotary")
+    @JvmField val FUEL_TANK_FULL_TRANSPARENT = model(
         "block/fuel_tank_full_transparent",
         useAO = true
     )
 
+    val register by lazy {
+        TournamentEvents.collectModelsToBake.on { modelBaker ->
+            MODELS.keys.forEach {
+                try {
+                    modelBaker.loadSimpleModel(it)
+                } catch (_: Exception) {
+                    println("[Tournament] Failed to load model $it!")
+                }
+            }
+        }
+
+        TournamentEvents.postModelReload.on { modelManager ->
+            MODELS.forEach { (key, model) ->
+                model.bakedModel = modelManager.`vs_tournament$getModelOrNull`(key) ?: let {
+                    // TODO: proper logging
+                    println("[Tournament] Failed to get model $key")
+                    modelManager.missingModel
+                }
+            }
+        }
+    }
 }

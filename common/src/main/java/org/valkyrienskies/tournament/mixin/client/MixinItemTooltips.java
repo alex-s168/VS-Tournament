@@ -14,7 +14,7 @@ import org.valkyrienskies.tournament.TournamentEvents;
 import java.util.List;
 
 @Mixin(Item.class)
-public class MixinItemTooltips {
+public abstract class MixinItemTooltips {
     @Inject(method = "appendHoverText", at = @At("HEAD"))
     private void ValkyrienTournament$addMassToTooltip(
             final ItemStack itemStack,

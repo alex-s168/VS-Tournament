@@ -22,7 +22,7 @@ import java.awt.*;
 import static org.valkyrienskies.tournament.util.helper.Helper3dKt.getShipRenderPosition;
 
 @Mixin(DebugRenderer.class)
-public class MixinDebugRenderer {
+public abstract class MixinDebugRenderer {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void postRender(final PoseStack matricesIgnore, final MultiBufferSource.BufferSource vertexConsumersIgnore,

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.valkyrienskies.tournament.TournamentEvents;
 
 @Mixin(Minecraft.class)
-public class MixinMinecraft {
+public abstract class MixinMinecraft {
     @Inject(at = @At("TAIL"), method = "runTick")
     private void runTick(boolean renderLevel, CallbackInfo ci) {
         TournamentEvents.clientTick.emit(Unit.INSTANCE);

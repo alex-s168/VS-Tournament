@@ -2,6 +2,8 @@ package org.valkyrienskies.tournament
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import net.minecraft.client.resources.model.ModelManager
+import net.minecraft.client.resources.model.UnbakedModel
 import net.minecraft.core.RegistryAccess
 import net.minecraft.data.worldgen.BootstapContext
 import net.minecraft.network.Connection
@@ -24,6 +26,8 @@ import org.valkyrienskies.core.api.event.RegisteredListener
 import org.valkyrienskies.core.api.event.SingleEvent
 import org.valkyrienskies.core.util.events.EventEmitterImpl
 import org.valkyrienskies.tournament.TournamentEvents.ResourceListenerRegistrar
+import java.util.function.Consumer
+import kotlin.jvm.Throws
 
 // kotlin <-> jvm interop moment
 class EventWrapper<T>(private val impl: SingleEvent<T>) : SingleEvent<T> {
@@ -44,6 +48,15 @@ object TournamentEvents {
     @JvmField val postPlayerJoin = EventWrapper(EventEmitterImpl<PlayerJoin>())
     @JvmField val postCreateDimensions = EventWrapper(EventEmitterImpl<MinecraftServer>())
     @JvmField val registriesCompleted = postCreateDimensions
+    @JvmField val collectModelsToBake = EventWrapper(EventEmitterImpl<ModelToBakeCollector>())
+    @JvmField val postModelReload = EventWrapper(EventEmitterImpl<ModelManager>())
+
+    interface ModelToBakeCollector {
+        @Throws(Exception::class)
+        fun loadSimpleModel(location: ResourceLocation)
+
+        fun putModel(location: ResourceLocation, model: UnbakedModel)
+    }
 
     interface ResourceListenerRegistrar {
         val registryAccess: RegistryAccess

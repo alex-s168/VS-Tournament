@@ -1,2 +1,5 @@
 accessWidener   v1  named
 accessible method net/minecraft/world/level/block/FireBlock setFlammable (Lnet/minecraft/world/level/block/Block;II)V
+accessible field net/minecraft/advancements/CriteriaTriggers CRITERIA Ljava/util/Map;
+
+accessible class net/minecraft/client/resources/model/ModelManager$ReloadState

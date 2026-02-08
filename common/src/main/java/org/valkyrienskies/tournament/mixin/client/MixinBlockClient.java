@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.valkyrienskies.tournament.util.block.WithExRenderInfo;
 
 @Mixin(Block.class)
-public class MixinBlockClient {
+public abstract class MixinBlockClient {
     @Inject(at = @At("HEAD"), method = "shouldRenderFace", cancellable = true)
     private static void shouldRenderFace(BlockState state, BlockGetter level, BlockPos offset, Direction face, BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
         var blockState = level.getBlockState(pos);

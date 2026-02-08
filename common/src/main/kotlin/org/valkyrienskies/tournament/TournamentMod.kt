@@ -56,6 +56,7 @@ object TournamentMod {
         TournamentWeights.register
         TournamentTriggers.register
         TournamentWorldGen.register
+        TournamentModels.register
 
         vsApi.registerAttachment(BalloonShipControl::class.java)
         vsApi.registerAttachment(PulseShipControl::class.java)

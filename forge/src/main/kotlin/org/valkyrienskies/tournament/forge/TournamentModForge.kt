@@ -54,13 +54,6 @@ class TournamentModForge {
             setupClient
         }
 
-        MOD_BUS.addListener { event: ModelEvent.RegisterAdditional ->
-            TournamentModels.MODELS.forEach { rl ->
-                LOGGER.info("Registering model $rl")
-                event.register(rl)
-            }
-        }
-
         MOD_BUS.addListener { event: RegisterRenderers ->
             entityRenderers(
                 event

@@ -63,10 +63,10 @@ class TransparentFuelTankBlockEntityRender:
         val old = GL11.glGetInteger(GL11.GL_FRONT_FACE)
 
         GL11.glFrontFace(GL11.GL_CCW)
-        TournamentModels.FUEL_TANK_FULL_TRANSPARENT.renderNow(pose, be, packedOverlay)
+        TournamentModels.FUEL_TANK_FULL_TRANSPARENT.renderer.render(pose, be, bufferSource, packedLight, packedOverlay)
 
         GL11.glFrontFace(GL11.GL_CW)
-        TournamentModels.FUEL_TANK_FULL_TRANSPARENT.renderNow(pose, be, packedOverlay)
+        TournamentModels.FUEL_TANK_FULL_TRANSPARENT.renderer.render(pose, be, bufferSource, packedLight, packedOverlay)
 
         GL11.glFrontFace(old)
 

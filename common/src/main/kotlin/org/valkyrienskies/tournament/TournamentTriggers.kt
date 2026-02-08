@@ -1,9 +1,8 @@
 package org.valkyrienskies.tournament
 
-import org.valkyrienskies.tournament.mixin.advancements.MixinCriteriaTriggers
+import net.minecraft.advancements.CriteriaTriggers
 import org.valkyrienskies.tournament.advancements.*
-import net.minecraft.advancements.CriterionTrigger;
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.advancements.CriterionTrigger
 import org.valkyrienskies.tournament.util.extension.once
 
 object TournamentTriggers {
@@ -20,7 +19,7 @@ object TournamentTriggers {
 
     val register by once {
         all.forEach {
-            (MixinCriteriaTriggers.getCriteria() as HashMap<ResourceLocation, CriterionTrigger<*>>)[it.id] = it
+            CriteriaTriggers.CRITERIA[it.id] = it
         }
     }
 

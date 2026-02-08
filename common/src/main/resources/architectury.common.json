@@ -1,3 +1,8 @@
 {
-  "accessWidener": "vs_tournament.accesswidener"
+  "accessWidener": "vs_tournament.accesswidener",
+  "injected_interfaces": {
+    "net/minecraft/client/resources/model/ModelManager": [
+      "org/valkyrienskies/tournament/client/ModelManagerExt"
+    ]
+  }
 }

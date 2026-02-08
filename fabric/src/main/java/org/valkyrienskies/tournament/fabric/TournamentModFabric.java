@@ -56,9 +56,6 @@ public class TournamentModFabric implements ModInitializer {
         public void onInitializeClient() {
             TournamentMod.initClient();
             TournamentMod.initClientRenderers(new ClientRenderersFabric());
-
-            ModelLoadingRegistry.INSTANCE.registerModelProvider((manager, out) ->
-                    TournamentModels.INSTANCE.getMODELS().forEach(out));
         }
 
         private static class ClientRenderersFabric implements TournamentMod.ClientRenderers {

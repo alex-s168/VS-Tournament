@@ -6,14 +6,15 @@
     "client.MixinBlockClient",
     "client.MixinDebugRenderer",
     "client.MixinItemTooltips",
-    "client.MixinMinecraft"
+    "client.MixinMinecraft",
+    "client.MixinModelBakery",
+    "client.MixinModelManager"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "minVersion": "0.8",
   "mixins": [
-    "advancements.MixinCriteriaTriggers",
     "level.MixinBiomeDefaultFeatures",
     "level.MixinOreFeatures",
     "level.MixinOrePlacements",
