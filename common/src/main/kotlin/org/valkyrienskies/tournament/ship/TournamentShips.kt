@@ -2,11 +2,11 @@ package org.valkyrienskies.tournament.ship
 
 import blitz.collections.remove
 import com.fasterxml.jackson.annotation.JsonAutoDetect
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.google.common.util.concurrent.AtomicDouble
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
+import net.minecraft.world.phys.Vec3
 import org.joml.Vector3d
 import org.joml.Vector3i
 import org.valkyrienskies.core.api.VsBeta
@@ -30,11 +30,9 @@ import org.valkyrienskies.tournament.TournamentFuels
 import org.valkyrienskies.tournament.blockentity.PropellerBlockEntity
 import org.valkyrienskies.tournament.util.BlockMap
 import org.valkyrienskies.tournament.util.SyncBlockMap
-import org.valkyrienskies.tournament.util.TypedResourceLocation
 import org.valkyrienskies.tournament.util.extension.*
 import org.valkyrienskies.tournament.util.helper.convertShipToWorldSpace
 import org.valkyrienskies.tournament.util.typed
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.min
 
@@ -167,13 +165,10 @@ class TournamentShips: ShipPhysicsListener
                 return@forEach
             }
 
-            val tForce = physShip.transform.shipToWorld.transformDirection(t.dir, Vector3d())
-            tForce.mul(force.toDouble())
-            val tPos = pos.toJOMLD()
-                .add(0.5, 0.5, 0.5, Vector3d())
-                .sub(physShip.transform.positionInShip)
-
-            physShip.applyWorldForce(tForce, tPos)
+            val dirForce = Vector3d(t.dir)
+                .mul(force.toDouble())
+            val tPos = Vec3.atCenterOf(pos).toJOML()
+            physShip.applyModelForce(dirForce, tPos)
         }
 
         thrusters.forEach { data ->
@@ -348,7 +343,7 @@ class TournamentShips: ShipPhysicsListener
             getOrCreate(ship, ship.chunkClaimDimension)
 
         @OptIn(GameTickOnly::class)
-        fun get(level: Level, pos: BlockPos)  =
+        fun getOrCreate(level: Level, pos: BlockPos)  =
             ((level.getLoadedShipManagingPos(pos)
                 ?: level.getShipManagingPos(pos))
                     as? LoadedServerShip)?.let { getOrCreate(it) }

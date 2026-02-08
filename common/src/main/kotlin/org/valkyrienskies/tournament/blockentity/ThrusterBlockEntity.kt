@@ -32,7 +32,7 @@ class ThrusterBlockEntity(
     @JvmField var lastActualThrottle = 0f
 
     private fun tick(level: ServerLevel) {
-        val controller = TournamentShips.get(level, worldPosition) ?: return
+        val controller = TournamentShips.getOrCreate(level, worldPosition) ?: return
         val thruster = controller.thrusterV2(worldPosition)!!
         val state = level.getBlockState(worldPosition)!!
         val signal = level.getBestNeighborSignal(worldPosition)

@@ -56,7 +56,7 @@ class PoweredBalloonBlock: BalloonBlock() {
 
         val signal = level.getBestNeighborSignal(pos)
 
-        TournamentShips.get(level, pos)?.addBalloon(
+        TournamentShips.getOrCreate(level, pos)?.addBalloon(
             pos,
             signal.toDouble() * TournamentConfig.SERVER.balloonAnalogStrength
         )

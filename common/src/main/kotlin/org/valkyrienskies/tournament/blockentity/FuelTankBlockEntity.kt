@@ -85,7 +85,7 @@ class FuelTankBlockEntity(
         contract {
             callsInPlace(fn, InvocationKind.AT_MOST_ONCE)
         }
-        return TournamentShips.get(level!!, blockPos)?.let(fn)
+        return TournamentShips.getOrCreate(level!!, blockPos)?.let(fn)
     }
 
     fun onAdded() {
@@ -106,8 +106,8 @@ class FuelTankBlockEntity(
 
     fun canStoreCount(stack: ItemStack): Int =
         ship {
-            val fuel = stack.tournamentFuel()?.fuel
-            if (fuel != null && it.fuelType?.let { it == fuel } != false)
+            val fuel = stack.tournamentFuel()
+            if (fuel != null && (it.fuelType == null || it.fuelType?.id == fuel.id))
                 min(stack.count, max(it.fuelCap - it.fuelCount, 0.0f).toInt())
             else 0
         } ?: 0

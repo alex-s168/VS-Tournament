@@ -122,9 +122,7 @@ class ThrusterBlock(
         super.onPlace(state, level, pos, oldState, isMoving)
         if (level !is ServerLevel) return
 
-        val ships = TournamentShips.get(level, pos)
-
-        ships?.addThrusterV2(
+        TournamentShips.getOrCreate(level, pos)?.addThrusterV2(
             pos,
             TournamentShips.ThrusterDataV2(
                 state.getValue(FACING).normal.toJOMLD(),
@@ -136,9 +134,7 @@ class ThrusterBlock(
     override fun onRemove(state: BlockState, level: Level, pos: BlockPos, newState: BlockState, isMoving: Boolean) {
         if (level !is ServerLevel) return
 
-        val ships = TournamentShips.get(level, pos)
-
-        ships?.removeThrusterV2(pos)
+        TournamentShips.getOrCreate(level, pos)?.removeThrusterV2(pos)
 
         super.onRemove(state, level, pos, newState, isMoving)
     }

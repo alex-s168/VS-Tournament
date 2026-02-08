@@ -13,8 +13,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
-import org.valkyrienskies.mod.common.getShipManagingPos
-import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.mod.common.util.toJOML
 import org.valkyrienskies.mod.common.util.toJOMLD
 import org.valkyrienskies.tournament.doc.Doc
@@ -63,7 +61,7 @@ class SpinnerBlock : DirectionalBlock(
         val signal = level.getBestNeighborSignal(pos)
         level.setBlock(pos, state.setValue(BlockStateProperties.POWER, signal), 2)
 
-        TournamentShips.get(level, pos)?.addSpinner(
+        TournamentShips.getOrCreate(level, pos)?.addSpinner(
             pos.toJOML(),
             state.getValue(FACING)
                 .opposite
@@ -79,7 +77,7 @@ class SpinnerBlock : DirectionalBlock(
         if (level.isClientSide) return
         level as ServerLevel
 
-        TournamentShips.get(level, pos)?.removeSpinner(
+        TournamentShips.getOrCreate(level, pos)?.removeSpinner(
             pos.toJOML()
         )
     }

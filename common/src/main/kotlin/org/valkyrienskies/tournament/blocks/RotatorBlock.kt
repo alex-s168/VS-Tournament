@@ -78,7 +78,7 @@ class RotatorBlock: DirectionalBaseEntityBlock(
     override fun onRemove(state: BlockState, level: Level, pos: BlockPos, newState: BlockState, isMoving: Boolean) {
         if (level !is ServerLevel) return
 
-        TournamentShips.get(level, pos)?.removePropeller(pos.toJOML())
+        TournamentShips.getOrCreate(level, pos)?.removePropeller(pos.toJOML())
 
         super.onRemove(state, level, pos, newState, isMoving)
     }

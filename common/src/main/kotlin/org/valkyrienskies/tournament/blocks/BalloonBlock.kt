@@ -16,8 +16,6 @@ import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.level.storage.loot.LootParams
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets
 import net.minecraft.world.phys.BlockHitResult
-import org.valkyrienskies.mod.common.getShipManagingPos
-import org.valkyrienskies.mod.common.getShipObjectManagingPos
 import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentLootTables
 import org.valkyrienskies.tournament.TournamentTriggers
@@ -40,7 +38,7 @@ open class BalloonBlock : Block(
         if (level.isClientSide) return
         level as ServerLevel
 
-        TournamentShips.get(level, pos)?.addBalloon(
+        TournamentShips.getOrCreate(level, pos)?.addBalloon(
             pos,
             TournamentConfig.SERVER.unpoweredBalloonMul * TournamentConfig.SERVER.balloonAnalogStrength
         )
@@ -52,7 +50,7 @@ open class BalloonBlock : Block(
         if (level.isClientSide) return
         level as ServerLevel
 
-        TournamentShips.get(level, pos)?.removeBalloon(pos)
+        TournamentShips.getOrCreate(level, pos)?.removeBalloon(pos)
     }
 
     override fun onProjectileHit(level: Level, state: BlockState, hit: BlockHitResult, projectile: Projectile) {
