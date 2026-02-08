@@ -69,7 +69,7 @@ processResources {
 
     filesMatching("META-INF/mods.toml") {
         expand  "version": project.version,
-                "vs2_version": vs2_version.substring(0, vs2_version.indexOf('+')),
+                "vs2_version": vs2_version,
                 "forge_kotlin_version": forge_kotlin_version
     }
 }

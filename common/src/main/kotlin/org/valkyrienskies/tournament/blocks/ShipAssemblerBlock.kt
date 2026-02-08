@@ -22,17 +22,16 @@ import net.minecraft.world.level.material.MapColor
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.world.phys.shapes.VoxelShape
-import org.valkyrienskies.mod.common.assembly.createNewShipWithBlocks
+import org.valkyrienskies.mod.common.assembly.ShipAssembler
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.isChunkInShipyard
-import org.valkyrienskies.tournament.TournamentConfig
 import org.valkyrienskies.tournament.TournamentTriggers
 import org.valkyrienskies.tournament.doc.Doc
 import org.valkyrienskies.tournament.doc.Documented
 import org.valkyrienskies.tournament.doc.documentation
 import org.valkyrienskies.tournament.util.DirectionalShape
 import org.valkyrienskies.tournament.util.RotShapes
-import org.valkyrienskies.tournament.util.ShipAssembler
+import org.valkyrienskies.tournament.util.TournamentShipAssembler
 
 class ShipAssemblerBlock : DirectionalBlock (
     Properties.of()
@@ -66,9 +65,9 @@ class ShipAssemblerBlock : DirectionalBlock (
         if (level.isChunkInShipyard(pos.x shr 4, pos.z shr 4)) {
             return false
         } else if (!state.isAir) {
-            val structure = ShipAssembler.findStructure(level, pos)
-            println(structure.size)
-            val shipData = createNewShipWithBlocks(pos, structure, level)
+            val structure = TournamentShipAssembler.findStructure(level, pos)
+
+            val shipData = ShipAssembler.assembleToShipFull(level, structure)
 
             player?.let {
                 TournamentTriggers.SHIP_ASSEMBLY_TRIGGER.trigger(player, structure.size)

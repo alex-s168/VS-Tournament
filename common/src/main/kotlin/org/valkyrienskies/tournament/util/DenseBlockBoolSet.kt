@@ -11,7 +11,7 @@ import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet
 
 // TODO: get rid of this and replace with VS?
 
-class DenseBlockBoolSet {
+class DenseBlockBoolSet: Set<BlockPos> {
     val backing = mutableMapOf<ChunkPos, DenseIx16x16BoolMap>()
 
     private fun get(cp: ChunkPos) =
@@ -41,7 +41,7 @@ class DenseBlockBoolSet {
         set(ChunkPos(blockPos), blockPos, value)
     }
 
-    inline fun forEachSet(fn: (ChunkPos, Int, Int, Int) -> Unit) =
+    inline fun forEachSet(fn: (cp: ChunkPos, absX: Int, absY: Int, absZ: Int) -> Unit) =
         backing.forEach { (cp, it) ->
             it.forEachSet { relX, y, relZ ->
                 val x = cp.minBlockX + relX
@@ -49,6 +49,12 @@ class DenseBlockBoolSet {
                 fn(cp, x, y, z)
             }
         }
+
+    inline fun forEachSet(fn: (BlockPos) -> Unit) {
+        forEachSet { _, x, y, z ->
+            fn(BlockPos(x, y, z))
+        }
+    }
 
     private inline fun serialize(unbufferedConsumer: (ByteArray) -> Unit, fn: (DenseIx16x16BoolMap) -> Unit) {
         unbufferedConsumer(backing.size.toBytes(Endian.LITTLE))
@@ -77,6 +83,43 @@ class DenseBlockBoolSet {
         serialize(unbufferedConsumer) {
             it.serializeByLayers(true, unbufferedConsumer)
         }
+
+    override val size: Int
+        get() {
+            var num = 0
+            backing.forEach { (_, it) ->
+                it.backing.forEachSet { _, map ->
+                    (0..<16).forEach {
+                        num += map.countSetInRow(it)
+                    }
+                }
+            }
+            return num
+        }
+
+    override fun isEmpty(): Boolean {
+        forEachSet { _, _, _, _ ->
+            return false
+        }
+        return true
+    }
+
+    override fun contains(element: BlockPos): Boolean =
+        get(element)
+
+    override fun iterator(): Iterator<BlockPos> =
+        iterator {
+            forEachSet {
+                yield(it)
+            }
+        }
+
+    fun clear() {
+        backing.clear()
+    }
+
+    override fun containsAll(elements: Collection<BlockPos>): Boolean =
+        elements.all { contains(it) }
 
     companion object {
         private inline fun deserialize(unbufferedProvider: (Int) -> ByteArray, fn: () -> DenseIx16x16BoolMap): DenseBlockBoolSet {

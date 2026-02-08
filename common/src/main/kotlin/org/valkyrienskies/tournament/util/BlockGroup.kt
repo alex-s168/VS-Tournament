@@ -5,6 +5,8 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
 import org.valkyrienskies.tournament.neighborBlocks
 
+// TODO: rewrite
+
 fun Level.blockGroup(pos: BlockPos, dest: DenseBlockBoolSet = DenseBlockBoolSet(), shouldCancel: (depth: Int) -> Boolean, match: (BlockState) -> Boolean): DenseBlockBoolSet {
     var depth = 0
 
