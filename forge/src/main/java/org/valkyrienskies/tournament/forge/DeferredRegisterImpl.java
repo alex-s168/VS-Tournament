@@ -38,7 +38,7 @@ public class DeferredRegisterImpl<T> implements DeferredRegister<T> {
 
     @Override
     public void applyAll() {
-        forge.register(TournamentModForge.Companion.getModBus());
+        forge.register(TournamentModForge.modBus);
     }
 
     @NotNull

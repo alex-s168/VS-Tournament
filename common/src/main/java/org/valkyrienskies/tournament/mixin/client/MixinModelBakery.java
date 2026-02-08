@@ -37,10 +37,7 @@ public abstract class MixinModelBakery {
 
     @Inject(
         method = "<init>",
-        at = @At(
-            value = "CONSTANT",
-            args = "stringValue=special"
-        )
+        at = @At("TAIL")
     )
     private void init(BlockColors blockColors,
                       ProfilerFiller profilerFiller,
@@ -48,19 +45,26 @@ public abstract class MixinModelBakery {
                       Map<ResourceLocation, List<ModelBakery.LoadedJson>> blockStateResources,
                       CallbackInfo ci)
     {
+        var self = (ModelBakery) (Object) this;
         TournamentEvents.collectModelsToBake.emit(new TournamentEvents.ModelToBakeCollector() {
+            private void process(UnbakedModel model) {
+                model.resolveParents(self::getModel);
+            }
+
             @Override
             public void putModel(@NotNull ResourceLocation location, @NotNull UnbakedModel model) {
                 unbakedCache.put(location, model);
                 topLevelModels.put(location, model);
+                process(model);
             }
 
             @Override
             public void loadSimpleModel(@NotNull ResourceLocation location) throws Exception {
-                BlockModel blockModel = loadBlockModel(location);
+                var blockModel = loadBlockModel(location);
                 cacheAndQueueDependencies(location, blockModel);
                 unbakedCache.put(location, blockModel);
                 topLevelModels.put(location, blockModel);
+                process(blockModel);
             }
         });
     }

@@ -44,8 +44,6 @@ configurations {
 }
 
 dependencies {
-    implementation("thedarkcolour:kotlinforforge:$forge_kotlin_version")
-
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:$mixin_extras_version"))
     implementation(include("io.github.llamalad7:mixinextras-forge:$mixin_extras_version"))
 
@@ -60,17 +58,19 @@ dependencies {
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
 
-    implementation "thedarkcolour:kotlinforforge:$forge_kotlin_version"
+    forgeRuntimeLibrary("maven.modrinth:kotlin-for-forge:$forge_kotlin_version")
 
-    implementation("me.alex_s168:blitz:${rootProject.blitz_version}")
-    forgeRuntimeLibrary shadowCommon("me.alex_s168:blitz:${rootProject.blitz_version}") { transitive = false }
+    implementation("me.alex_s168:blitz:$blitz_version")
+    forgeRuntimeLibrary shadowCommon("me.alex_s168:blitz:$blitz_version") { transitive = false }
 }
 
 processResources {
     inputs.property "version", project.version
 
     filesMatching("META-INF/mods.toml") {
-        expand "version": project.version, "vs2_version": vs2_version.substring(0, vs2_version.indexOf('+'))
+        expand  "version": project.version,
+                "vs2_version": vs2_version.substring(0, vs2_version.indexOf('+')),
+                "forge_kotlin_version": forge_kotlin_version
     }
 }
 
